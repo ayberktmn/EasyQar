@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "516878710486",
+    "project_id": "qrmycar-431dd",
+    "storage_bucket": "qrmycar-431dd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516878710486:android:ebb9dc77329fdc915bbb77",
+        "android_client_info": {
+          "package_name": "com.example.qrmycar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQBeZd7qme-DAyLvNVJDJEacB8XbS7NGE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
