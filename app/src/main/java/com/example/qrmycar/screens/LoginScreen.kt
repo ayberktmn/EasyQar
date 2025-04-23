@@ -109,7 +109,7 @@ fun LoginScreen(navController: NavController) {
                         } else {
                             Toast.makeText(
                                 navController.context,
-                                "Email ve şifre boş olamaz a",
+                                "Email ve şifre boş olamaz",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
