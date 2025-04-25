@@ -7,4 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Yeni eklenen renkler -->
+    <color name="primaryBlue">#1591EA</color> <!-- 0xFF1591EA rengi burada tanımlandı -->
 </resources>

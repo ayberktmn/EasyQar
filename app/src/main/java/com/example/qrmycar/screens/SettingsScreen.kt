@@ -5,15 +5,31 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.qrmycar.CustomSmallTopAppBar
+import com.example.qrmycar.viewmodel.LoginViewModel
 
 @Composable
-fun SettingsScreen(navController: NavController) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp)
-    ) {
-        Text(text = "Ayarlar Ekranı", style = MaterialTheme.typography.headlineMedium)
+fun SettingsScreen(navController: NavController, loginViewModel: LoginViewModel = hiltViewModel()) {
+    Scaffold(
+        topBar = {
+            CustomSmallTopAppBar(title = "Ayarlar")
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding) // topBar yüksekliğine göre içerik aşağıda başlasın
+        ) {
+            TextButton(onClick = {
+                // Çıkış yapma işlemi
+                loginViewModel.logout()
+                // Giriş ekranına yönlendir
+                navController.navigate("login") // Yönlendirmek istediğiniz ekrana göre değiştirin
+            }) {
+                Text("Çıkış yap")
+            }
+        }
     }
 }

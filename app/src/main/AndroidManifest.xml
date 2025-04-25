@@ -3,11 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.qrmycar">
 
-    <!-- Kamera izni -->
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
-    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.CAMERA"
+        tools:ignore="PermissionImpliesUnsupportedChromeOsHardware" />
 
     <!-- Uygulama tanımlamaları -->
     <application

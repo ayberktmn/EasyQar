@@ -19,15 +19,30 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.qrmycar.viewmodel.LoginViewModel
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = hiltViewModel()) {
+
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val primaryBlue = Color(0xFF1591EA)
+
+    // Kullanıcı giriş yapmış mı kontrol et ve yönlendir
+    LaunchedEffect(Unit) {
+        if (loginViewModel.isUserLoggedIn()) {
+            navController.navigate("qrscreen") {
+                // Clear the back stack and prevent going back to login screen
+                popUpTo("login") { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -75,7 +90,6 @@ fun LoginScreen(navController: NavController) {
                      cursorColor = primaryBlue
                 )
             )
-
             Spacer(modifier = Modifier.height(24.dp))
 
             if (isLoading) {
@@ -85,33 +99,23 @@ fun LoginScreen(navController: NavController) {
                     onClick = {
                         if (username.isNotEmpty() && password.isNotEmpty()) {
                             isLoading = true
-                           /* loginViewmodel.loginUser(
+                            loginViewModel.loginUser(
                                 email = username,
-                                password = password,
-                            ) { success, errorMessage ->
+                                password = password
+                            ) { success, error ->
                                 isLoading = false
                                 if (success) {
                                     navController.navigate("qrscreen") {
+                                        // Clear the back stack and prevent going back to login screen
                                         popUpTo("login") { inclusive = true }
+                                        launchSingleTop = true
                                     }
                                 } else {
-                                    Toast.makeText(
-                                        navController.context,
-                                        errorMessage ?: "Giriş başarısız",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    errorMessage = "Email ya da şifre yanlış"
                                 }
                             }
-                            */
-                            navController.navigate("qrscreen") {
-                                popUpTo("login") { inclusive = true }
-                            }
                         } else {
-                            Toast.makeText(
-                                navController.context,
-                                "Email ve şifre boş olamaz",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            errorMessage = "Email ve şifre boş olamaz"
                         }
                     },
                     modifier = Modifier

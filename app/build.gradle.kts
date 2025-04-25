@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.example.qrmycar"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.qrmycar"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -46,7 +46,6 @@ android {
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         kotlinOptions {
             jvmTarget = "17"
-            // Aşağı satırı ekle:
             languageVersion = "1.9"
             apiVersion = "1.9"
         }
@@ -70,7 +69,7 @@ android {
 
 dependencies {
     // Core
-    implementation(libs.androidx.core.ktx)
+
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
@@ -114,9 +113,7 @@ dependencies {
     // Google Sign-In
     implementation(libs.googleid)
 
-    // Android Credentials API
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
+
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.51.1")
@@ -136,5 +133,16 @@ dependencies {
     implementation ("androidx.compose.material:material:1.5.0")
 
     implementation ("com.google.firebase:firebase-auth:22.1.1")
+
+
+    // Core
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.core:core:1.12.0")
+
+// Android Credentials (daha uyumlu sürüm)
+    implementation("androidx.credentials:credentials:1.2.0-alpha03")
+    implementation("androidx.credentials:credentials-play-services-auth:1.2.0-alpha03")
+
+
 
 }

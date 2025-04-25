@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.qrmycar.util.SharedPreferencesHelper
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,7 @@ class UserViewModel @Inject constructor(
     private val _plateNumber = mutableStateOf("")
     val plateNumber: State<String> = _plateNumber
 
-  //  private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 
 
     init {
@@ -37,7 +38,7 @@ class UserViewModel @Inject constructor(
         }
     }
 
- /*   fun registerUser(email: String, password: String, onResult: (Boolean, String?) -> Unit) {
+    fun registerUser(email: String, password: String, onResult: (Boolean, String?) -> Unit) {
         firebaseAuth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -50,7 +51,7 @@ class UserViewModel @Inject constructor(
             }
     }
 
-  */
+
 
     fun saveUserData(email: String, plate: String) {
         sharedPreferencesHelper.saveUserData(email, plate)

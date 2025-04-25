@@ -1,6 +1,6 @@
 package com.example.qrmycar.viewmodel
 
-/*
+
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,53 +29,15 @@ class LoginViewModel : ViewModel() {
         }
     }
 
-    // Kullanıcı girişini yapacak fonksiyon
-    fun loginWithEmailPassword(
-        email: String,
-        password: String,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        viewModelScope.launch {
-            try {
-                val result = auth.signInWithEmailAndPassword(email, password).await()
-                if (result.user != null) {
-                    onSuccess()
-                } else {
-                    onFailure("Kullanıcı bulunamadı.")
-                }
-            } catch (e: Exception) {
-                Log.e("LoginError", "Error during login: ${e.message}")
-                onFailure(e.message ?: "Bir hata oluştu.")
-            }
-        }
+    fun isUserLoggedIn(): Boolean {
+        return FirebaseAuth.getInstance().currentUser != null
     }
 
-    // Kullanıcı kaydedecek fonksiyon
-    fun registerWithEmailPassword(
-        email: String,
-        password: String,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        viewModelScope.launch {
-            try {
-                val result = auth.createUserWithEmailAndPassword(email, password).await()
-                if (result.user != null) {
-                    onSuccess()
-                } else {
-                    onFailure("Kullanıcı oluşturulamadı.")
-                }
-            } catch (e: Exception) {
-                Log.e("RegisterError", "Error during registration: ${e.message}")
-                onFailure(e.message ?: "Bir hata oluştu.")
-            }
-        }
+    fun logout() {
+        FirebaseAuth.getInstance().signOut()
     }
+
 }
 
 
 
-
-
- */
