@@ -1,18 +1,30 @@
 package com.example.qrmycar.viewmodel
 
-
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
-class LoginViewModel : ViewModel() {
+@HiltViewModel
+class LoginViewModel @Inject constructor() : ViewModel() {
 
-   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
 
-    // Kullanıcı giriş fonksiyonu
+    var adSoyad = mutableStateOf<String?>(null)
+        private set
+
+    init {
+        loadAdSoyad()
+    }
+
+
     fun loginUser(email: String, password: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             try {
@@ -37,7 +49,35 @@ class LoginViewModel : ViewModel() {
         FirebaseAuth.getInstance().signOut()
     }
 
+    val currentUserEmail: String?
+        get() = auth.currentUser?.email
+
+    private fun loadAdSoyad() {
+        val user = FirebaseAuth.getInstance().currentUser
+        val uid = user?.uid
+
+        if (uid != null) {
+            val userRef = firestore.collection("users").document(uid)
+
+            viewModelScope.launch {
+                try {
+                    val documentSnapshot = userRef.get().await()
+                    if (documentSnapshot.exists()) {
+                        val fullName =
+                            documentSnapshot.getString("adSoyad") ?: "Ad Soyad Bulunamadı"
+                        adSoyad.value = fullName
+                        Log.d("Firestore", "Ad soyad: $fullName")
+                    } else {
+                        adSoyad.value = "Ad Soyad Bulunamadı"
+                        Log.d("Firestore", "Belge bulunamadı.")
+                    }
+                } catch (e: Exception) {
+                    Log.e("Firestore", "Veri okuma hatası: ${e.message}")
+                    adSoyad.value = "Ad Soyad Bulunamadı"
+                }
+            }
+        } else {
+            adSoyad.value = "Ad Soyad Bulunamadı"
+        }
+    }
 }
-
-
-

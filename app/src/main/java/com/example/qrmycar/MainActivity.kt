@@ -22,6 +22,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.core.graphics.toColorInt
+import com.google.firebase.messaging.FirebaseMessaging
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -44,55 +45,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             QrMyCarTheme {
-                val navController = rememberNavController()
-
-                val userEmail by userViewModel.userEmail
-                val plateNumber by userViewModel.plateNumber
-
-
-                Scaffold(
-                    bottomBar = {
-                        val currentRoute = navController
-                            .currentBackStackEntryAsState().value?.destination?.route
-                        if (currentRoute != "login" && currentRoute != "register") {
-                            BottomNavBar(
-                                navController = navController,
-                                userEmail = userEmail,
-                                plateNumber = plateNumber
-                            )
-                        }
-                    }
-                ) { innerPadding ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = "login",
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        composable("login") { LoginScreen(navController) }
-                        composable("register") { RegisterScreen(navController) }
-                        composable(
-                            route = "qrScreen?email={email}&plateNumber={plateNumber}",
-                            arguments = listOf(
-                                navArgument("email") { defaultValue = "" },
-                                navArgument("plateNumber") { defaultValue = "" }
-                            )
-                        ) { backStackEntry ->
-                            val email = backStackEntry.arguments?.getString("email") ?: ""
-                            val plate = backStackEntry.arguments?.getString("plateNumber") ?: ""
-
-                            QRScreen(
-                                navController = navController,
-                                email = email,
-                                plateNumber = plate
-                            )
-                        }
-                        composable("profile") { ProfileScreen(navController) }
-                        composable("settings") { SettingsScreen(navController) }
-                    }
-                }
-
+                FirebaseMessaging.getInstance().isAutoInitEnabled = true
+                Navigation()
             }
-            RequestNotificationPermission()
         }
     }
 }

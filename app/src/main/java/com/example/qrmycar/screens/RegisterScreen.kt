@@ -27,6 +27,7 @@ fun RegisterScreen(
     userViewModel: UserViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
+    var adSoyad by remember { mutableStateOf("") }
     var plateNumber by remember { mutableStateOf(TextFieldValue("")) }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -88,6 +89,21 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
+                value = adSoyad,
+                onValueChange = { adSoyad = it.replaceFirstChar { char -> char.uppercaseChar() } },
+                label = { Text("Ad Soyad") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = primaryBlue,
+                    focusedLabelColor = primaryBlue,
+                    cursorColor = primaryBlue
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Şifre") },
@@ -127,36 +143,40 @@ fun RegisterScreen(
                         if (password == confirmPassword) {
                             isLoading = true
 
-                            userViewModel.registerUser(email, password) { success, error ->
+                            // Register user via Firebase Authentication
+                            userViewModel.registerUser(
+                                email,
+                                adSoyad,
+                                plateNumber.text,
+                                password,
+                            ) { success, message ->
                                 isLoading = false
 
                                 if (success) {
-                                    // Email ve plaka bilgilerini shared preferences'e KAYIT BAŞARILI OLUNCA kaydet
-                                    userViewModel.saveUserData(email, plateNumber.text)
-
-                                    // Bilgilendirici toast
                                     Toast.makeText(
                                         navController.context,
-                                        "Kayıt başarılı! Plaka: ${plateNumber.text}",
+                                        message ?: "Registration completed successfully.",
                                         Toast.LENGTH_SHORT
                                     ).show()
 
-                                    // QR ekranına yönlendir
+                                    // Navigate to QR screen after successful registration
                                     navController.navigate("qrScreen?email=$email&plateNumber=${plateNumber.text}") {
                                         popUpTo("register") { inclusive = true }
                                     }
                                 } else {
-                                    // Hata mesajı göster
                                     Toast.makeText(
                                         navController.context,
-                                        error ?: "Kayıt sırasında hata oluştu",
+                                        message ?: "Registration failed.",
                                         Toast.LENGTH_SHORT
                                     ).show()
-                                    Log.e("RegisterError", error ?: "Unknown error")
                                 }
                             }
                         } else {
-                            Toast.makeText(navController.context, "Şifreler uyuşmuyor", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                navController.context,
+                                "Passwords do not match",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     },
                     modifier = Modifier
@@ -166,16 +186,16 @@ fun RegisterScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
                     enabled = email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()
                 ) {
-                    Text(text = "Kayıt Ol", style = TextStyle(fontSize = 20.sp))
+                    Text(text = "Register", style = TextStyle(fontSize = 20.sp))
                 }
-            }
 
-            errorMessage?.let {
-                Text(
-                    text = it,
-                    color = Color.Red,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+                errorMessage?.let {
+                    Text(
+                        text = it,
+                        color = Color.Red,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
             }
         }
     }

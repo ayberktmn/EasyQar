@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     kotlin("kapt")
     id("com.google.dagger.hilt.android")
-    id ("com.google.gms.google-services")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -51,7 +51,6 @@ android {
         }
     }
 
-
     buildFeatures {
         compose = true
     }
@@ -69,7 +68,6 @@ android {
 
 dependencies {
     // Core
-
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
@@ -82,14 +80,20 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
-    // Compose UI Debug & Test
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    implementation(platform(libs.androidx.compose.bom))
+    // Firebase BOM (firestore, auth, messaging, analytics)
+    implementation (platform("com.google.firebase:firebase-bom:30.1.0"))
+
     // Firebase Auth
-   // implementation(libs.firebase.auth)
+    implementation("com.google.firebase:firebase-auth")
+
+    // Firebase Firestore
+    implementation("com.google.firebase:firebase-firestore")
+
+    // Firebase Cloud Messaging (FCM)
+    implementation("com.google.firebase:firebase-messaging")
+
+    // Firebase Analytics
+    implementation("com.google.firebase:firebase-analytics")
 
     // ZXing (tek sürüm yeterli)
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
@@ -103,7 +107,6 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.0")
     implementation("androidx.camera:camera-view:1.0.0")
 
-
     // ML Kit
     implementation("com.google.mlkit:barcode-scanning:17.0.0")
 
@@ -112,8 +115,6 @@ dependencies {
 
     // Google Sign-In
     implementation(libs.googleid)
-
-
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.51.1")
@@ -124,6 +125,7 @@ dependencies {
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.8.1")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.0")  // veya uygun versiyon
 
     // Test
     testImplementation(libs.junit)
@@ -132,17 +134,14 @@ dependencies {
 
     implementation ("androidx.compose.material:material:1.5.0")
 
-    implementation ("com.google.firebase:firebase-auth:22.1.1")
-
-
     // Core
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.core:core:1.12.0")
 
-// Android Credentials (daha uyumlu sürüm)
+    // Android Credentials
     implementation("androidx.credentials:credentials:1.2.0-alpha03")
     implementation("androidx.credentials:credentials-play-services-auth:1.2.0-alpha03")
 
-
+    implementation ("com.google.firebase:firebase-messaging:23.1.1")
 
 }

@@ -1,6 +1,7 @@
 package com.example.qrmycar
 
 import android.graphics.Bitmap
+import android.util.Base64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 
@@ -18,7 +19,16 @@ fun generateQRCode(text: String): Bitmap {
     return bmp
 }
 
+// Eski yöntem (isteğe bağlı kullanılabilir)
 fun generateUniqueQRCode(plate: String, email: String): Bitmap {
     val uniqueData = "$plate|$email"
     return generateQRCode(uniqueData)
+}
+
+// ✅ Firebase kullanıcı UID'sine özel QR kod
+fun generateUserQRCode(uid: String): Bitmap {
+    // UID'yi base64 ile encode ederek daha okunmaz hale getirebiliriz (isteğe bağlı)
+    val encoded = Base64.encodeToString(uid.toByteArray(), Base64.NO_WRAP)
+   /// val uid = "$uid"
+    return generateQRCode(encoded)
 }

@@ -7,59 +7,125 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.qrmycar.util.SharedPreferencesHelper
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
-class UserViewModel @Inject constructor(
-    private val sharedPreferencesHelper: SharedPreferencesHelper,
-) : ViewModel() {
+class UserViewModel @Inject constructor() : ViewModel() {
 
     private val _userEmail = mutableStateOf("")
     val userEmail: State<String> = _userEmail
 
-    private val _plateNumber = mutableStateOf("")
-    val plateNumber: State<String> = _plateNumber
+    private val _plateNumber = mutableStateOf<String?>(null)
+    val plateNumber: State<String?> = _plateNumber
+
+    private val _isLoading = mutableStateOf(true)
+    val isLoading: State<Boolean> = _isLoading
 
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
-
+    private val firestore = FirebaseFirestore.getInstance()
 
     init {
         loadUserData()
     }
 
     private fun loadUserData() {
-        viewModelScope.launch {
-            _userEmail.value = sharedPreferencesHelper.getUserEmail() ?: ""
-            _plateNumber.value = sharedPreferencesHelper.getPlateNumber() ?: ""
+        val user = firebaseAuth.currentUser
+        if (user != null) {
+            _userEmail.value = user.email ?: ""
+            loadPlateNumber(user.uid)
+        } else {
+            _userEmail.value = ""
+            _plateNumber.value = null
+            _isLoading.value = false
         }
     }
 
-    fun registerUser(email: String, password: String, onResult: (Boolean, String?) -> Unit) {
+    // Firebase Authentication + Firestore Kaydı tek fonksiyonda
+    fun registerUser(
+        email: String,
+        adSoyad: String,
+        plateNumber: String,
+        password: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
         firebaseAuth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    // Kayıt başarılı, kullanıcıyı sharedPreferences'e kaydet
-                    saveUserData(email, "")
-                    onResult(true, null)
+                    val user = firebaseAuth.currentUser
+                    val uid = user?.uid ?: return@addOnCompleteListener
+
+                    _userEmail.value = email
+
+                    val userMap = hashMapOf(
+                        "email" to email,
+                        "adSoyad" to adSoyad,
+                        "plateNumber" to plateNumber,
+                        "uid" to uid
+                    )
+
+                    firestore.collection("users")
+                        .document(uid)
+                        .set(userMap)
+                        .addOnSuccessListener {
+                            Log.d("UserViewModel", "Kullanıcı Firestore'a kaydedildi")
+                            onResult(true, "Kayıt işlemi başarılı.")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("UserViewModel", "Firestore kayıt hatası: ${e.message}")
+                            onResult(false, "Firestore'a kaydedilirken hata oluştu: ${e.message}")
+                        }
                 } else {
                     onResult(false, task.exception?.message)
                 }
             }
     }
 
+    fun loadPlateNumber(uid: String) {
+        _isLoading.value = true
 
+        firestore.collection("users")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                val plate = document.getString("plateNumber")
+                _plateNumber.value = plate ?: ""
+                _isLoading.value = false
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Plaka yüklenirken hata oluştu", e)
+                _plateNumber.value = ""
+                _isLoading.value = false
+            }
+    }
 
-    fun saveUserData(email: String, plate: String) {
-        sharedPreferencesHelper.saveUserData(email, plate)
-        _userEmail.value = email
-        _plateNumber.value = plate
+    fun saveFcmTokenToFirestore(token: String) {
+        val user = firebaseAuth.currentUser
+        if (user != null) {
+            val docRef = firestore.collection("uniqueQr").document(user.uid)
 
-        // Veriyi hemen kontrol et
-        val savedPlateNumber = sharedPreferencesHelper.getPlateNumber()
-        Log.d("UserViewModel", "Saved Plate Number: $savedPlateNumber")
+            docRef.get()
+                .addOnSuccessListener { document ->
+                    val existingToken = document.getString("fcmToken")
+                    if (existingToken == null || existingToken != token) {
+                        val data = hashMapOf("fcmToken" to token)
+                        docRef.set(data)
+                            .addOnSuccessListener {
+                                Log.d("UserViewModel", "Token kaydedildi.")
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e("UserViewModel", "Token kaydedilemedi: ${e.message}")
+                            }
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e("UserViewModel", "Token kontrol hatası: ${e.message}")
+                }
+        }
     }
 }

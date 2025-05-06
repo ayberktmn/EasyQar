@@ -30,18 +30,38 @@ import com.google.mlkit.vision.common.InputImage
 import androidx.camera.core.Preview
 import androidx.camera.view.PreviewView
 import android.Manifest.permission.CAMERA
+import android.content.Context
+import android.util.Log
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.example.qrmycar.R
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun QRScannerScreen(navController: NavController) {
     var qrResult by remember { mutableStateOf<String?>(null) }
     var hasCameraPermission by remember { mutableStateOf(false) }
-    val context =LocalContext.current
+    var isLoading by remember { mutableStateOf(true) }  // Loading durumu
+    val context = LocalContext.current
+
+
+    // QR kodu okunduğunda gösterilecek dialog durumu
+    var isDialogVisible by remember { mutableStateOf(false) }
 
     // Kamera izni istemek için launcher
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
             hasCameraPermission = isGranted
+            isLoading = false  // İzin verildikten sonra loading durumu bitir
         }
     )
 
@@ -50,6 +70,7 @@ fun QRScannerScreen(navController: NavController) {
         when {
             ContextCompat.checkSelfPermission(context, CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED -> {
                 hasCameraPermission = true
+                isLoading = false  // İzin daha önce verilmişse loading durumu bitir
             }
             else -> {
                 cameraPermissionLauncher.launch(CAMERA)
@@ -71,7 +92,10 @@ fun QRScannerScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (hasCameraPermission) {
+            // Loading durumu kontrolü
+            if (isLoading) {
+                CircularProgressIndicator()  // Loading animasyonu
+            } else if (hasCameraPermission) {
                 QRScannerBox(
                     modifier = Modifier
                         .size(350.dp) // Daha küçük kutu
@@ -88,7 +112,7 @@ fun QRScannerScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             qrResult?.let {
-                Text("Sonuç: $it")
+                Text("Sonuç: $it")  // okunan qr a ait araba plakası çıksın yapılacak
             }
         }
     }
@@ -103,6 +127,9 @@ fun QRScannerBox(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
+
+    // QR kodu okunduktan sonra diyalog göstermek için durum
+    var isDialogVisible by remember { mutableStateOf(false) }
 
     // AndroidView ile PreviewView'i bağlama
     AndroidView(
@@ -147,6 +174,11 @@ fun QRScannerBox(
                                 val decoded = Base64.decode(raw, Base64.DEFAULT)
                                 val decodedString = String(decoded)
                                 onQrScanned(decodedString) // Tarama sonucunu tetikle
+                                getUserInfoFromUid(context)
+
+
+                                // QR kodu okunduğunda diyalog gösterilsin
+                                isDialogVisible = true // Diyalog açılacak
                             } catch (e: Exception) {
                                 // Hata durumunda işlem yapılmaz
                             }
@@ -170,4 +202,179 @@ fun QRScannerBox(
             imageAnalyzer // Görüntü analizi kamera ile bağlanacak
         )
     }
+
+    // QR kodu okunduktan sonra diyalog gösterme
+    if (isDialogVisible) {
+        ShowOptionsDialog(
+            onDismiss = { isDialogVisible = false },
+            onOptionSelected = { selectedOption ->
+                Log.d("QRDialog", "Seçilen seçenek: $selectedOption")
+                // Seçilen seçeneğe göre işlem yapabilirsiniz
+            }
+        )
+    }
+}
+
+
+// Dialog'ı gösteren fonksiyon
+@Composable
+fun ShowOptionsDialog(
+    onDismiss: () -> Unit,
+    onOptionSelected: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Seçim Yapın") },
+        text = {
+            Column {
+                TextButton(onClick = { onOptionSelected("Seçenek 1") }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.parkyasak),
+                            contentDescription = "Yanlış Park İkonu",
+                            modifier = Modifier
+                                .size(32.dp) // ikon boyutu
+                                .clip(CircleShape) // yuvarlak şekil
+                                .background(Color.White), // arka plan (isteğe bağlı)
+                            tint = Color.Unspecified
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = "Yanlış Park",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black // İsteğe bağlı renk
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                TextButton(onClick = { onOptionSelected("Seçenek 2") }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.faracik),
+                            contentDescription = "Farlar Açık İkonu",
+                            modifier = Modifier
+                                .size(32.dp) // ikon boyutu
+                                .clip(CircleShape) // yuvarlak şekil
+                                .background(Color.White), // arka plan (isteğe bağlı)
+                            tint = Color.Unspecified
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            "Farlar Açık",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                TextButton(onClick = { onOptionSelected("Seçenek 3") }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.camacik),
+                            contentDescription = "Cam Açık İkonu",
+                            modifier = Modifier
+                                .size(32.dp) // ikon boyutu
+                                .clip(CircleShape) // yuvarlak şekil
+                                .background(Color.White), // arka plan (isteğe bağlı)
+                            tint = Color.Unspecified
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            "Cam Açık",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black // İsteğe bağlı renk
+                            )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                TextButton(onClick = { onOptionSelected("Seçenek 4") }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.kapiacik),
+                            contentDescription = "Kapılar Açık İkonu",
+                            modifier = Modifier
+                                .size(32.dp) // ikon boyutu
+                                .clip(CircleShape) // yuvarlak şekil
+                                .background(Color.White), // arka plan (isteğe bağlı)
+                            tint = Color.Unspecified
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        "Kapılar Açık",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black // İsteğe bağlı renk
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                TextButton(onClick = { onOptionSelected("Seçenek 5") }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.kaza),
+                            contentDescription = "Kaza İkonu",
+                            modifier = Modifier
+                                .size(32.dp) // ikon boyutu
+                                .clip(CircleShape) // yuvarlak şekil
+                                .background(Color.White), // arka plan (isteğe bağlı)
+                            tint = Color.Unspecified
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            "Kaza",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black // İsteğe bağlı renk
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    "Kapat",
+                    fontSize = 16.sp,
+                    color = Color.Red
+                )
+            }
+        }
+    )
+}
+
+fun getUserInfoFromUid(context: Context) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    val db = FirebaseFirestore.getInstance()
+
+    db.collection("users")
+        .document(uid)  // UID'ye göre sorgulama yapıyoruz
+        .get()
+        .addOnSuccessListener { document ->
+            if (document.exists()) {
+                val userName = document.getString("adSoyad")
+                val plate = document.getString("plateNumber")
+
+                if (userName != null && plate != null) {
+                    Toast.makeText(context, "Ad: $userName - Plaka: $plate", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "Ad veya Plaka bilgisi eksik.", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            }
+        }
+        .addOnFailureListener { e ->
+            Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
 }
