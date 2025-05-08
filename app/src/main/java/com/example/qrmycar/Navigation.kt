@@ -10,6 +10,8 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.qrmycar.screens.*
 import com.example.qrmycar.ui.theme.QrMyCarTheme
+import com.example.qrmycar.utils.BottomNavBar
+import com.example.qrmycar.utils.RequestNotificationPermission
 import com.example.qrmycar.viewmodel.UserViewModel
 
 @Composable

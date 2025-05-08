@@ -80,4 +80,33 @@ class LoginViewModel @Inject constructor() : ViewModel() {
             adSoyad.value = "Ad Soyad Bulunamadı"
         }
     }
+    fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
+        val user = auth.currentUser
+        val uid = user?.uid
+
+        if (user != null && uid != null) {
+            viewModelScope.launch {
+                try {
+                    // Firestore'dan "users" koleksiyonundaki kullanıcı belgesini sil
+                    firestore.collection("users").document(uid).delete().await()
+
+                    // Firestore'dan "uniqueQr" koleksiyonundaki kullanıcıya ait belgeyi sil
+                    firestore.collection("uniqueQr").document(uid).delete().await()
+
+                    // Ardından Firebase Authentication'dan kullanıcıyı sil
+                    user.delete().addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            onResult(true, null) // Başarılı silme
+                        } else {
+                            onResult(false, task.exception?.message ?: "Kullanıcı silinemedi.")
+                        }
+                    }
+                } catch (e: Exception) {
+                    onResult(false, "Silme hatası: ${e.message}")
+                }
+            }
+        } else {
+            onResult(false, "Kullanıcı oturumu açık değil.")
+        }
+    }
 }

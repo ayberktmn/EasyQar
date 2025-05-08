@@ -1,5 +1,6 @@
-package com.example.qrmycar
+package com.example.qrmycar.utils
 
+import android.Manifest
 import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,7 +25,7 @@ fun RequestNotificationPermission() {
 
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }

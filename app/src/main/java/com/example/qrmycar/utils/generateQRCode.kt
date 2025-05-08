@@ -1,6 +1,7 @@
-package com.example.qrmycar
+package com.example.qrmycar.utils
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.util.Base64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
@@ -13,7 +14,7 @@ fun generateQRCode(text: String): Bitmap {
     val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
     for (x in 0 until width) {
         for (y in 0 until height) {
-            bmp.setPixel(x, y, if (bitMatrix.get(x, y)) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+            bmp.setPixel(x, y, if (bitMatrix.get(x, y)) Color.BLACK else Color.WHITE)
         }
     }
     return bmp

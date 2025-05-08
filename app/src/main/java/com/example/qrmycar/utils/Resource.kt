@@ -1,4 +1,4 @@
-package com.example.qrmycar
+package com.example.qrmycar.utils
 
 sealed class Resource<T>(
     val data :T? = null,
