@@ -49,20 +49,6 @@ fun QRCodeScreen(userEmail: String) {
                 modifier = Modifier.size(350.dp)
             )
         }
-
-        // Firebase Messaging token'ını al ve Firestore'a kaydet
-        LaunchedEffect(Unit) {
-            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                if (!task.isSuccessful) {
-                    Log.w("FCM", "FCM token alınamadı", task.exception)
-                    return@addOnCompleteListener
-                }
-                val token = task.result
-                Log.d("FCM", "FCM Token: $token")
-                userViewModel.saveFcmTokenToFirestore(token)
-            }
-        }
-
         Spacer(modifier = Modifier.height(20.dp))
 
         // Plaka numarasını yazdır

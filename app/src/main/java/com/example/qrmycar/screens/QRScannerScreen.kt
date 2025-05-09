@@ -128,6 +128,7 @@ fun QRScannerBox(
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
 
+    var isScanningActive by remember { mutableStateOf(true) }
     // QR kodu okunduktan sonra diyalog göstermek için durum
     var isDialogVisible by remember { mutableStateOf(false) }
 
@@ -162,33 +163,38 @@ fun QRScannerBox(
 
         // Görüntü analizini başlatıyoruz
         imageAnalyzer.setAnalyzer(ContextCompat.getMainExecutor(context)) { imageProxy ->
+            if (!isScanningActive) {
+                imageProxy.close()
+                return@setAnalyzer
+            }
+
             val mediaImage = imageProxy.image
             if (mediaImage != null) {
                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
                 barcodeScanner.process(image)
                     .addOnSuccessListener { barcodes ->
-                        // QR kodu bulunduğunda ilk bulduğunda sonucu al
-                        barcodes.firstOrNull()?.rawValue?.let { raw ->
-                            try {
-                                // QR kodunun çözülmesi
-                                val decoded = Base64.decode(raw, Base64.DEFAULT)
-                                val decodedString = String(decoded)
-                                onQrScanned(decodedString) // Tarama sonucunu tetikle
-                                getUserInfoFromUid(context)
+                        barcodes.forEach { barcode ->
+                            barcode.rawValue?.let { raw ->
+                                try {
+                                    val decoded = Base64.decode(raw, Base64.DEFAULT)
+                                    val decodedString = String(decoded)
 
-
-                                // QR kodu okunduğunda diyalog gösterilsin
-                                isDialogVisible = true // Diyalog açılacak
-                            } catch (e: Exception) {
-                                // Hata durumunda işlem yapılmaz
+                                    isScanningActive = false // ✅ taramayı durdur
+                                    onQrScanned(decodedString)
+                                    getUserInfoFromUid(context, decodedString)
+                                    isDialogVisible = true
+                                } catch (e: Exception) {
+                                    Log.e("QRCodeError", "QR kodu çözülürken hata: ${e.message}")
+                                    Toast.makeText(context, "QR kodu çözülürken bir hata oluştu.", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }
                     .addOnCompleteListener {
-                        imageProxy.close() // Görüntüyü serbest bırak
+                        imageProxy.close()
                     }
             } else {
-                imageProxy.close() // Görüntü null ise kapat
+                imageProxy.close()
             }
         }
 
@@ -206,10 +212,12 @@ fun QRScannerBox(
     // QR kodu okunduktan sonra diyalog gösterme
     if (isDialogVisible) {
         ShowOptionsDialog(
-            onDismiss = { isDialogVisible = false },
+            onDismiss = {
+                isDialogVisible = false
+                isScanningActive = true // ✅ taramayı yeniden başlat
+            },
             onOptionSelected = { selectedOption ->
                 Log.d("QRDialog", "Seçilen seçenek: $selectedOption")
-                // Seçilen seçeneğe göre işlem yapabilirsiniz
             }
         )
     }
@@ -353,17 +361,19 @@ fun ShowOptionsDialog(
     )
 }
 
-fun getUserInfoFromUid(context: Context) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+fun getUserInfoFromUid(context: Context, uid: String) {
     val db = FirebaseFirestore.getInstance()
 
     db.collection("users")
-        .document(uid)  // UID'ye göre sorgulama yapıyoruz
+        .document(uid)  // QR kodundan alınan uid'yi kullanıyoruz
         .get()
         .addOnSuccessListener { document ->
             if (document.exists()) {
                 val userName = document.getString("adSoyad")
                 val plate = document.getString("plateNumber")
+
+                // Veriyi logla
+                Log.d("UserInfo", "adSoyad: $userName, plateNumber: $plate")
 
                 if (userName != null && plate != null) {
                     Toast.makeText(context, "Ad: $userName - Plaka: $plate", Toast.LENGTH_LONG).show()

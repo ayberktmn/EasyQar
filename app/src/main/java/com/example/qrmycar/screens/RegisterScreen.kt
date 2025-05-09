@@ -140,15 +140,16 @@ fun RegisterScreen(
             } else {
                 Button(
                     onClick = {
+
                         if (password == confirmPassword) {
                             isLoading = true
 
                             // Register user via Firebase Authentication
                             userViewModel.registerUser(
-                                email,
+                                email.trim(),
                                 adSoyad,
                                 plateNumber.text,
-                                password,
+                                password.trim(),
                             ) { success, message ->
                                 isLoading = false
 

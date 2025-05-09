@@ -74,6 +74,20 @@ class UserViewModel @Inject constructor() : ViewModel() {
                         .set(userMap)
                         .addOnSuccessListener {
                             Log.d("UserViewModel", "Kullanıcı Firestore'a kaydedildi")
+
+                            // 🔽 FCM Token'ı al ve kaydet
+                            com.google.firebase.messaging.FirebaseMessaging.getInstance().token
+                                .addOnSuccessListener { token ->
+                                    firestore.collection("users").document(uid)
+                                        .update("fcmToken", token)
+                                        .addOnSuccessListener {
+                                            Log.d("UserViewModel", "FCM token kaydedildi")
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.e("UserViewModel", "FCM token kaydedilemedi: ${e.message}")
+                                        }
+                                }
+
                             onResult(true, "Kayıt işlemi başarılı.")
                         }
                         .addOnFailureListener { e ->
@@ -85,6 +99,7 @@ class UserViewModel @Inject constructor() : ViewModel() {
                 }
             }
     }
+
 
     fun loadPlateNumber(uid: String) {
         _isLoading.value = true
@@ -104,7 +119,7 @@ class UserViewModel @Inject constructor() : ViewModel() {
             }
     }
 
-    fun saveFcmTokenToFirestore(token: String) {
+    /* fun saveFcmTokenToFirestore(token: String) {
         val user = firebaseAuth.currentUser
         if (user != null) {
             val docRef = firestore.collection("uniqueQr").document(user.uid)
@@ -128,4 +143,6 @@ class UserViewModel @Inject constructor() : ViewModel() {
                 }
         }
     }
+
+     */
 }
