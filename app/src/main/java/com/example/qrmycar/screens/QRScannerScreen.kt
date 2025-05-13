@@ -35,15 +35,29 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.qrmycar.R
-import com.google.firebase.auth.FirebaseAuth
+import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Callback
+import okhttp3.Response
+import java.io.IOException
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
 
 @Composable
 fun QRScannerScreen(navController: NavController) {
@@ -51,7 +65,6 @@ fun QRScannerScreen(navController: NavController) {
     var hasCameraPermission by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }  // Loading durumu
     val context = LocalContext.current
-
 
     // QR kodu okunduğunda gösterilecek dialog durumu
     var isDialogVisible by remember { mutableStateOf(false) }
@@ -98,7 +111,7 @@ fun QRScannerScreen(navController: NavController) {
             } else if (hasCameraPermission) {
                 QRScannerBox(
                     modifier = Modifier
-                        .size(350.dp) // Daha küçük kutu
+                        .size(330.dp) // Daha küçük kutu
                         .clip(RoundedCornerShape(16.dp))
                         .border(2.dp, Color.Gray, RoundedCornerShape(16.dp)),
                     onQrScanned = {
@@ -131,6 +144,9 @@ fun QRScannerBox(
     var isScanningActive by remember { mutableStateOf(true) }
     // QR kodu okunduktan sonra diyalog göstermek için durum
     var isDialogVisible by remember { mutableStateOf(false) }
+
+    var scannedUid by remember { mutableStateOf<String?>(null) }
+
 
     // AndroidView ile PreviewView'i bağlama
     AndroidView(
@@ -179,10 +195,21 @@ fun QRScannerBox(
                                     val decoded = Base64.decode(raw, Base64.DEFAULT)
                                     val decodedString = String(decoded)
 
-                                    isScanningActive = false // ✅ taramayı durdur
+                                    scannedUid = decodedString
+                                    isScanningActive = false
                                     onQrScanned(decodedString)
-                                    getUserInfoFromUid(context, decodedString)
-                                    isDialogVisible = true
+
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        try {
+                                            // UID'den kullanıcı bilgilerini çek
+                                            getUserInfoFromUid(context, decodedString)
+                                            isDialogVisible = true
+                                        } catch (e: Exception) {
+                                            Log.e("QRCodeError", "Kullanıcı bilgisi alınırken hata: ${e.message}")
+                                            Toast.makeText(context, "Bir hata oluştu.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+
                                 } catch (e: Exception) {
                                     Log.e("QRCodeError", "QR kodu çözülürken hata: ${e.message}")
                                     Toast.makeText(context, "QR kodu çözülürken bir hata oluştu.", Toast.LENGTH_SHORT).show()
@@ -193,6 +220,7 @@ fun QRScannerBox(
                     .addOnCompleteListener {
                         imageProxy.close()
                     }
+
             } else {
                 imageProxy.close()
             }
@@ -210,152 +238,78 @@ fun QRScannerBox(
     }
 
     // QR kodu okunduktan sonra diyalog gösterme
-    if (isDialogVisible) {
+    if (isDialogVisible && scannedUid != null) {
         ShowOptionsDialog(
-            onDismiss = {
-                isDialogVisible = false
-                isScanningActive = true // ✅ taramayı yeniden başlat
+            context = context,
+            uid = scannedUid!!,
+            onDismiss = {  isDialogVisible = false
+                           isScanningActive = true  },
+            onOptionSelected = { token, option, context ->
+                // Seçenek seçildikten sonra yapılacak işlemler
             },
-            onOptionSelected = { selectedOption ->
-                Log.d("QRDialog", "Seçilen seçenek: $selectedOption")
+            onScanAgain = {
+                // QR taramayı tekrar başlat
+                isScanningActive = true  // Burada `isScanningActive`'i tekrar `true` yaparak QR taramayı başlatabilirsiniz
             }
         )
     }
+
 }
 
-
-// Dialog'ı gösteren fonksiyon
 @Composable
 fun ShowOptionsDialog(
+    context: Context,
+    uid: String,
     onDismiss: () -> Unit,
-    onOptionSelected: (String) -> Unit
+    onOptionSelected: (String, String, Context) -> Unit,  // Bu callback'i diyalogda kullanabilirsin
+    onScanAgain: () -> Unit  // QR taramayı tekrar başlatmak için callback
 ) {
+    var selectedOption by remember { mutableStateOf<String?>(null) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Seçim Yapın") },
+        title = { Text(text = "Bir Durum Seçin") },
         text = {
             Column {
-                TextButton(onClick = { onOptionSelected("Seçenek 1") }) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.parkyasak),
-                            contentDescription = "Yanlış Park İkonu",
-                            modifier = Modifier
-                                .size(32.dp) // ikon boyutu
-                                .clip(CircleShape) // yuvarlak şekil
-                                .background(Color.White), // arka plan (isteğe bağlı)
-                            tint = Color.Unspecified
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Yanlış Park",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black // İsteğe bağlı renk
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                TextButton(onClick = { onOptionSelected("Seçenek 2") }) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.faracik),
-                            contentDescription = "Farlar Açık İkonu",
-                            modifier = Modifier
-                                .size(32.dp) // ikon boyutu
-                                .clip(CircleShape) // yuvarlak şekil
-                                .background(Color.White), // arka plan (isteğe bağlı)
-                            tint = Color.Unspecified
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            "Farlar Açık",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                TextButton(onClick = { onOptionSelected("Seçenek 3") }) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.camacik),
-                            contentDescription = "Cam Açık İkonu",
-                            modifier = Modifier
-                                .size(32.dp) // ikon boyutu
-                                .clip(CircleShape) // yuvarlak şekil
-                                .background(Color.White), // arka plan (isteğe bağlı)
-                            tint = Color.Unspecified
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            "Cam Açık",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black // İsteğe bağlı renk
-                            )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                TextButton(onClick = { onOptionSelected("Seçenek 4") }) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.kapiacik),
-                            contentDescription = "Kapılar Açık İkonu",
-                            modifier = Modifier
-                                .size(32.dp) // ikon boyutu
-                                .clip(CircleShape) // yuvarlak şekil
-                                .background(Color.White), // arka plan (isteğe bağlı)
-                            tint = Color.Unspecified
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                    Text(
-                        "Kapılar Açık",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black // İsteğe bağlı renk
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                TextButton(onClick = { onOptionSelected("Seçenek 5") }) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.kaza),
-                            contentDescription = "Kaza İkonu",
-                            modifier = Modifier
-                                .size(32.dp) // ikon boyutu
-                                .clip(CircleShape) // yuvarlak şekil
-                                .background(Color.White), // arka plan (isteğe bağlı)
-                            tint = Color.Unspecified
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            "Kaza",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black // İsteğe bağlı renk
-                        )
-                    }
-                }
+                OptionItem("Yanlış Park", R.drawable.parkyasak, selectedOption) { selectedOption = it }
+                OptionItem("Farlar Açık", R.drawable.faracik, selectedOption) { selectedOption = it }
+                OptionItem("Cam Açık", R.drawable.camacik, selectedOption) { selectedOption = it }
+                OptionItem("Kapılar Açık", R.drawable.kapiacik, selectedOption) { selectedOption = it }
+                OptionItem("Kaza", R.drawable.kaza, selectedOption) { selectedOption = it }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    "Kapat",
-                    fontSize = 16.sp,
-                    color = Color.Red
-                )
+            TextButton(
+                onClick = {
+                    if (selectedOption != null) {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            // Seçilen seçenekle ilgili FCM tokeni alıyoruz ve mesaj gönderiyoruz
+                            val token = getFcmTokenByUid(uid)
+                            token?.let {
+                                // FCM bildirimini gönder
+                                sendPushNotificationToUser(it, "QR Kod Durumu", "Seçilen durum: $selectedOption", context)
+                                // Seçenek gönderildikten sonra callback çağrılabilir
+                                onOptionSelected(it, selectedOption!!, context)
+                                onDismiss()
+                            }
+                        }
+                        // Gönderme işlemi başarılı, QR taramayı tekrar aktif et
+                        onScanAgain()
+                    } else {
+                        Toast.makeText(context, "Lütfen bir seçenek seçin", Toast.LENGTH_SHORT).show()
+                    }
+                    onDismiss() // Gönder butonuna tıklandığında diyalog kapanır
+                }
+            ) {
+                Text("Gönder", fontSize = 16.sp, color = Color.Blue)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onDismiss()  // İptal butonuna tıklandığında diyalog kapanır
+            }) {
+                Text("İptal", fontSize = 16.sp, color = Color.Red)
+              //  onScanAgain()
             }
         }
     )
@@ -388,3 +342,136 @@ fun getUserInfoFromUid(context: Context, uid: String) {
             Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
         }
 }
+
+suspend fun getFcmTokenByUid(uid: String): String? {
+    return suspendCoroutine { continuation ->
+        FirebaseFirestore.getInstance().collection("users")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                val token = document.getString("fcmToken")
+                continuation.resume(token)
+            }
+            .addOnFailureListener {
+                continuation.resume(null)
+            }
+    }
+}
+
+/* (eğer diğer fonk hata verirse bunu aktif et)
+suspend fun getFcmTokenByUid(uid: String): String? = withContext(Dispatchers.IO) {
+    val db = FirebaseFirestore.getInstance()
+    try {
+        val snapshot = db.collection("users").document(uid).get().await()
+        if (snapshot.exists()) {
+            return@withContext snapshot.getString("fcmToken") // Firestore'da token "fcmToken" adıyla tutuluyor varsayımı
+        } else {
+            Log.e("FCMToken", "Kullanıcı bulunamadı")
+            return@withContext null
+        }
+    } catch (e: Exception) {
+        Log.e("FCMToken", "Token alınırken hata: ${e.message}")
+        return@withContext null
+    }
+}
+
+ */
+
+@Composable
+fun OptionItem(
+    label: String,
+    iconRes: Int,
+    selectedOption: String?,
+    onSelect: (String) -> Unit
+) {
+    val isSelected = selectedOption == label
+
+    val modifier = if (isSelected) {
+        Modifier
+           // .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(colorResource(id = R.color.primaryBlue))
+    } else {
+        Modifier
+    }
+
+    TextButton(
+        onClick = { onSelect(label) },
+        modifier = modifier
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = "$label icon",
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                tint = Color.Unspecified
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = label,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+        }
+    }
+}
+
+
+// FCM bildirimini göndermek için asenkron işlem
+suspend fun sendPushNotificationToUser(fcmToken: String, title: String, body: String, context: Context) {
+    withContext(Dispatchers.IO) {
+        try {
+            // FCM yetkilendirme anahtarını alıyoruz
+            val credentials = context.assets.open("qrmycar-431dd-firebase-adminsdk-fbsvc-5df0a50375.json").use {
+                GoogleCredentials.fromStream(it)
+                    .createScoped(listOf("https://www.googleapis.com/auth/firebase.messaging"))
+            }
+
+            credentials.refreshIfExpired()
+            val accessToken = credentials.accessToken.tokenValue
+
+            // JSON verisini hazırlıyoruz
+            val json = """
+                {
+                  "message": {
+                    "token": "$fcmToken",
+                    "notification": {
+                      "title": "$title",
+                      "body": "$body"
+                    }
+                  }
+                }
+            """.trimIndent()
+
+            // HTTP isteği gönderiyoruz
+            val client = OkHttpClient()
+            val request = Request.Builder()
+                .url("https://fcm.googleapis.com/v1/projects/qrmycar-431dd/messages:send")
+                .addHeader("Authorization", "Bearer $accessToken")
+                .addHeader("Content-Type", "application/json; charset=utf-8")
+                .post(json.toRequestBody("application/json; charset=utf-8".toMediaType()))
+                .build()
+
+            // Yanıtı bekliyoruz
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                Log.d("FCM", "Bildirim başarıyla gönderildi")
+            } else {
+                Log.e("FCM", "Bildirim gönderilemedi: ${response.message}")
+            }
+        } catch (e: Exception) {
+            Log.e("FCM", "FCM bildirim hatası: ${e.message}")
+        }
+    }
+}
+
+
+
+

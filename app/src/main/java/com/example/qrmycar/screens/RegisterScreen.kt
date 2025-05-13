@@ -187,7 +187,7 @@ fun RegisterScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
                     enabled = email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()
                 ) {
-                    Text(text = "Register", style = TextStyle(fontSize = 20.sp))
+                    Text(text = "Kayıt Ol", style = TextStyle(fontSize = 20.sp))
                 }
 
                 errorMessage?.let {

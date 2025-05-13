@@ -2,10 +2,14 @@ package com.example.qrmycar.screens
 
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
@@ -14,7 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -87,114 +93,144 @@ fun ProfileScreen(navController: NavController, loginViewModel: LoginViewModel =
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    shape = MaterialTheme.shapes.medium
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(250.dp) // Yükseklik ihtiyaca göre ayarlanabilir
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profil Resmi",
-                            tint = Color(0xFF1591EA),
-                            modifier = Modifier.size(96.dp)
+                        // Arka planda yer alacak resim
+                        Image(
+                            painter = painterResource(id = R.drawable.bgcar), // Burada arka planda kullanılacak resmi belirle
+                            contentDescription = "Arka Plan Resmi",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight(0.5f), // Resmin sadece üst yarısını göster
+                            contentScale = ContentScale.Crop // Resmi kutuya tam oturacak şekilde kırp
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        // Card içeriği
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Profil Resmi",
+                                tint = Color(0xFF1591EA),
+                                modifier = Modifier.size(96.dp)
+                            )
 
-                        when (adSoyad) {
-                            null -> {
-                                CircularProgressIndicator()
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Ad Soyad Yükleniyor...")
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            when (adSoyad) {
+                                null -> {
+                                    CircularProgressIndicator()
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Ad Soyad Yükleniyor...")
+                                }
+                                "Ad Soyad Bulunamadı" -> Text(
+                                    "Ad Soyad Bulunamadı",
+                                    style = MaterialTheme.typography.headlineMedium
+                                )
+                                else -> Text(
+                                    adSoyad!!,
+                                    style = MaterialTheme.typography.headlineMedium
+                                )
                             }
 
-                            "Ad Soyad Bulunamadı" -> Text(
-                                "Ad Soyad Bulunamadı",
-                                style = MaterialTheme.typography.headlineMedium
-                            )
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                            else -> Text(
-                                adSoyad!!,
-                                style = MaterialTheme.typography.headlineMedium
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.email),
-                                contentDescription = "Email Icon",
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = userEmail,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.Gray
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.mail),
+                                    contentDescription = "Email Icon",
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = userEmail,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.Gray
+                                )
+                            }
                         }
                     }
                 }
 
+
                 Spacer(modifier = Modifier.height(32.dp))
 
-                Button(
-                    onClick = {
-                        // navController.navigate("edit_profile")
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1591EA)
-                    )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Icon(Icons.Default.AccountCircle, contentDescription = null, tint = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Bilgileri Düzenle",
-                        color = Color.White,
-                        fontSize = 18.sp
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { /* Profil bilgileri */ }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.Black)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Profil Bilgilerini Güncelle", style = MaterialTheme.typography.bodyLarge)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedButton(
-                    onClick = {
-                        openDeleteDialog.value = true
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Text(
-                        "Hesabımı Sil",
-                        color = MaterialTheme.colorScheme.scrim,
-                        fontSize = 18.sp,
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { openDeleteDialog.value = true }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(painter = painterResource(id = R.drawable.deleteuser), contentDescription = null, tint = Color.Red)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Hesabımı Sil", style = MaterialTheme.typography.bodyLarge, color = Color.Red)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedButton(
-                    onClick = {
-                        openLogoutDialog.value = true
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Text(
-                        text = "Çıkış Yap",
-                        color = MaterialTheme.colorScheme.error,
-                        fontSize = 18.sp
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {  openLogoutDialog.value = true }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Color.Red)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Çıkış Yap", style = MaterialTheme.typography.bodyLarge, color = Color.Red)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text("Versiyon: 1.0.0")
+                Text(text = stringResource(id = R.string.version))
             }
         }
     }

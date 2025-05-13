@@ -62,6 +62,11 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes +="/META-INF/LICENSE.txt"
+            excludes +="/META-INF/NOTICE"
         }
     }
 }
@@ -118,6 +123,7 @@ dependencies {
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.51.1")
+    implementation(libs.volley)
     kapt("com.google.dagger:hilt-android-compiler:2.51")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
     implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
@@ -143,5 +149,10 @@ dependencies {
     implementation("androidx.credentials:credentials-play-services-auth:1.2.0-alpha03")
 
     implementation ("com.google.firebase:firebase-messaging:23.1.1")
+
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.18.0")
+    implementation("com.squareup.okhttp3:okhttp:4.9.1")
+    implementation("com.squareup.moshi:moshi:1.12.0")
+
 
 }

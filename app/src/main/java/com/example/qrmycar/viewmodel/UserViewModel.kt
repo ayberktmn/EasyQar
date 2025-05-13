@@ -24,6 +24,10 @@ class UserViewModel @Inject constructor() : ViewModel() {
     private val _plateNumber = mutableStateOf<String?>(null)
     val plateNumber: State<String?> = _plateNumber
 
+    private val _adSoyad = mutableStateOf("")
+    val adSoyad: State<String> = _adSoyad
+
+
     private val _isLoading = mutableStateOf(true)
     val isLoading: State<Boolean> = _isLoading
 
@@ -42,6 +46,7 @@ class UserViewModel @Inject constructor() : ViewModel() {
         } else {
             _userEmail.value = ""
             _plateNumber.value = null
+            _adSoyad.value = ""
             _isLoading.value = false
         }
     }
@@ -109,12 +114,14 @@ class UserViewModel @Inject constructor() : ViewModel() {
             .get()
             .addOnSuccessListener { document ->
                 val plate = document.getString("plateNumber")
+                _adSoyad.value = document.getString("adSoyad") ?: ""
                 _plateNumber.value = plate ?: ""
                 _isLoading.value = false
             }
             .addOnFailureListener { e ->
                 Log.e("Firestore", "Plaka yüklenirken hata oluştu", e)
                 _plateNumber.value = ""
+                _adSoyad.value = ""
                 _isLoading.value = false
             }
     }

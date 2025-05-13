@@ -7,10 +7,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.qrmycar.R
 import com.example.qrmycar.utils.generateUserQRCode
 import com.example.qrmycar.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -56,9 +60,56 @@ fun QRCodeScreen(userEmail: String) {
             CircularProgressIndicator()
         } else {
             if (!plateNumber.isNullOrEmpty()) {
-                Text(text = plateNumber ?: "", style = MaterialTheme.typography.headlineLarge)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.emptyplate),
+                        contentDescription = "Boş plaka arka planı",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = plateNumber ?: "",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = Color.Black // Gerekirse değiştir
+                        )
+                        Text(
+                            text = userViewModel.adSoyad.value,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Black
+                        )
+                    }
+                }
+
             } else {
-                Text(text = "Plaka numarası bulunamadı", style = MaterialTheme.typography.headlineSmall)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp) // yüksekliği ihtiyacına göre ayarla
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.emptyplate),
+                        contentDescription = "Boş plaka arka planı",
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Text(
+                        text = "Plaka numarası bulunamadı",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.Black // Arka plana göre okunabilir bir renk kullan
+                    )
+                }
             }
         }
     }
