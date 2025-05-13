@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -97,23 +98,27 @@ fun ProfileScreen(navController: NavController, loginViewModel: LoginViewModel =
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Box(
-                        modifier = Modifier.fillMaxWidth().height(250.dp) // Yükseklik ihtiyaca göre ayarlanabilir
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp)
                     ) {
-                        // Arka planda yer alacak resim
+                        // Arka plan görseli (üst yarı)
                         Image(
-                            painter = painterResource(id = R.drawable.bgcar), // Burada arka planda kullanılacak resmi belirle
+                            painter = painterResource(id = R.drawable.bgcar),
                             contentDescription = "Arka Plan Resmi",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .fillMaxHeight(0.5f), // Resmin sadece üst yarısını göster
-                            contentScale = ContentScale.Crop // Resmi kutuya tam oturacak şekilde kırp
+                                .fillMaxHeight(0.5f), // Yarıya kadar
+                            contentScale = ContentScale.Crop
                         )
 
-                        // Card içeriği
-                        Column(
+                        // Profil ve bilgiler (resmin altına hizalanmış)
+                        Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
+                                .align(Alignment.BottomCenter) // YATAYDA ORTALA ve aşağı hizala
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center // Bu Row içindeki elemanları ortalamaya çalışır, ama align zaten yeterli
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AccountCircle,
@@ -122,40 +127,42 @@ fun ProfileScreen(navController: NavController, loginViewModel: LoginViewModel =
                                 modifier = Modifier.size(96.dp)
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
 
-                            when (adSoyad) {
-                                null -> {
-                                    CircularProgressIndicator()
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Ad Soyad Yükleniyor...")
+                            Column {
+                                when (adSoyad) {
+                                    null -> {
+                                        CircularProgressIndicator()
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text("Ad Soyad Yükleniyor...")
+                                    }
+                                    "Ad Soyad Bulunamadı" -> Text(
+                                        "Ad Soyad Bulunamadı",
+                                        style = MaterialTheme.typography.headlineMedium
+                                    )
+                                    else -> Text(
+                                        adSoyad!!,
+                                        style = MaterialTheme.typography.headlineMedium
+                                    )
                                 }
-                                "Ad Soyad Bulunamadı" -> Text(
-                                    "Ad Soyad Bulunamadı",
-                                    style = MaterialTheme.typography.headlineMedium
-                                )
-                                else -> Text(
-                                    adSoyad!!,
-                                    style = MaterialTheme.typography.headlineMedium
-                                )
-                            }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
 
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.mail),
-                                    contentDescription = "Email Icon",
-                                    modifier = Modifier.size(28.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = userEmail,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = Color.Gray
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.mail),
+                                        contentDescription = "Email Icon",
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = userEmail,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.Gray
+                                    )
+                                }
                             }
                         }
                     }
