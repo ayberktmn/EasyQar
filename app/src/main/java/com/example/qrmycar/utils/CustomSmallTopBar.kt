@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomSmallTopAppBar(title: String) {
+
     Column(
         modifier = Modifier,
         horizontalAlignment = Alignment.CenterHorizontally

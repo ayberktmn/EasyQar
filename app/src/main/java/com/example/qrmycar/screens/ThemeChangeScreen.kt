@@ -1,38 +1,49 @@
 package com.example.qrmycar.screens
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.qrmycar.utils.CustomSmallTopAppBar
-import com.example.qrmycar.viewmodel.LoginViewModel
+import androidx.navigation.compose.rememberNavController
+import com.example.qrmycar.AppTheme
 import com.example.qrmycar.R
+import com.example.qrmycar.utils.CustomSmallTopAppBar
+import com.example.qrmycar.viewmodel.LocalThemeViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(navController: NavController, loginViewModel: LoginViewModel = hiltViewModel()) {
-
-    val context = LocalContext.current
+fun ThemeChangeScreen(navController: NavController) {
+    val themeViewModel = LocalThemeViewModel.current
+    val currentTheme by themeViewModel.appTheme.collectAsState()
 
     Scaffold(
         topBar = {
-            CustomSmallTopAppBar(title = "Ayarlar")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1591EA))
+            ) {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Geri",
+                        tint = Color.White
+                    )
+                }
+                CustomSmallTopAppBar(title = "Tema Değiştir")
+            }
         }
     ) { innerPadding ->
         Column(
@@ -41,60 +52,57 @@ fun SettingsScreen(navController: NavController, loginViewModel: LoginViewModel 
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp, vertical = 24.dp)
         ) {
-            // Tema Değiştir
+            // Light Mod Kartı
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp),
+                    .padding(vertical = 6.dp)
+                    .clickable {
+                        themeViewModel.toggleTheme(AppTheme.LIGHT)
+                    },
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { navController.navigate("theme") }
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.theme),
+                        painter = painterResource(id = R.drawable.lightmode),
                         contentDescription = null,
                         tint = Color.Black
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Tema Değiştir", style = MaterialTheme.typography.bodyLarge)
+                    Text("Light Mod", style = MaterialTheme.typography.bodyLarge)
                 }
             }
 
-            // Bildirim Ayarları
+            // Dark Mod Kartı
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp),
+                    .padding(vertical = 6.dp)
+                    .clickable {
+                        themeViewModel.toggleTheme(AppTheme.DARK)
+                    },
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                }
-                            } else {
-                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = Uri.parse("package:${context.packageName}")
-                                }
-                            }
-                            context.startActivity(intent)
-                        }
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.Black)
+                    Icon(
+                        painter = painterResource(id = R.drawable.darkmode),
+                        contentDescription = null,
+                        tint = Color.Black
+                    )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Bildirim Ayarları", style = MaterialTheme.typography.bodyLarge)
+                    Text("Dark Mod", style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }

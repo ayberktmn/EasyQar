@@ -154,5 +154,19 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.9.1")
     implementation("com.squareup.moshi:moshi:1.12.0")
 
+    implementation ("androidx.media3:media3-exoplayer:1.3.1")
+    implementation ("androidx.media3:media3-ui:1.3.1")
+
+    implementation ("com.airbnb.android:lottie-compose:5.0.3")
+
+    implementation ("androidx.datastore:datastore-preferences:1.0.0")
+
+    // Material 3 Compose
+    implementation("androidx.compose.material3:material3:1.1.0")
+
+    //Coil
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+
 
 }

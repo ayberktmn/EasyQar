@@ -16,7 +16,6 @@ import com.example.qrmycar.viewmodel.UserViewModel
 
 @Composable
 fun Navigation() {
-    QrMyCarTheme {
         val userViewModel: UserViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
         val navController = rememberNavController()
 
@@ -83,12 +82,13 @@ fun Navigation() {
                     }
                     composable("profile") { ProfileScreen(navController) }
                     composable("settings") { SettingsScreen(navController) }
+                    composable("theme") { ThemeChangeScreen(navController) }
+                    composable("notification") { NotificationScreen(navController) }
+                    composable("profileEdit") { ProfileEditScreen(navController) }
                 }
             }
         }
-
         RequestNotificationPermission()
-    }
 }
 
 

@@ -1,6 +1,5 @@
 package com.example.qrmycar.screens
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,7 +28,7 @@ fun RegisterScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var adSoyad by remember { mutableStateOf("") }
-    var plateNumber by remember { mutableStateOf(TextFieldValue("")) }
+    var plateNumberr by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -65,11 +65,9 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = plateNumber,
+                value = plateNumberr,
                 onValueChange = { newValue ->
-                    // Plaka numarasını büyük harfe çevirerek formatlayalım ve cursor'ı koruyalım
-                    val formattedPlate = newValue.text.uppercase()
-                    plateNumber = TextFieldValue(formattedPlate, selection = newValue.selection)
+                    plateNumberr = newValue.uppercase()
                 },
                 label = { Text("Plaka Numarası") },
                 singleLine = true,
@@ -81,10 +79,12 @@ fun RegisterScreen(
                     cursorColor = primaryBlue
                 ),
                 keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done
+                    imeAction = ImeAction.Done,
+                    keyboardType = KeyboardType.Ascii,
                 ),
                 keyboardActions = KeyboardActions.Default
             )
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -148,7 +148,7 @@ fun RegisterScreen(
                             userViewModel.registerUser(
                                 email.trim(),
                                 adSoyad,
-                                plateNumber.text,
+                                plateNumberr,
                                 password.trim(),
                             ) { success, message ->
                                 isLoading = false
@@ -161,7 +161,7 @@ fun RegisterScreen(
                                     ).show()
 
                                     // Navigate to QR screen after successful registration
-                                    navController.navigate("qrScreen?email=$email&plateNumber=${plateNumber.text}") {
+                                    navController.navigate("qrScreen?email=$email&plateNumber=${plateNumberr}") {
                                         popUpTo("register") { inclusive = true }
                                     }
                                 } else {

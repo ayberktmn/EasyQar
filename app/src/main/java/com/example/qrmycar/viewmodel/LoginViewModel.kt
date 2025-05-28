@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -17,8 +19,8 @@ class LoginViewModel @Inject constructor() : ViewModel() {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    var adSoyad = mutableStateOf<String?>(null)
-        private set
+    private val _adSoyad = MutableStateFlow<String?>(null)
+    val adSoyad: StateFlow<String?> get() = _adSoyad
 
     init {
         loadAdSoyad()
@@ -53,7 +55,7 @@ class LoginViewModel @Inject constructor() : ViewModel() {
         get() = auth.currentUser?.email
 
     private fun loadAdSoyad() {
-        val user = FirebaseAuth.getInstance().currentUser
+        val user = auth.currentUser
         val uid = user?.uid
 
         if (uid != null) {
@@ -63,50 +65,67 @@ class LoginViewModel @Inject constructor() : ViewModel() {
                 try {
                     val documentSnapshot = userRef.get().await()
                     if (documentSnapshot.exists()) {
-                        val fullName =
-                            documentSnapshot.getString("adSoyad") ?: "Ad Soyad Bulunamadı"
-                        adSoyad.value = fullName
+                        val fullName = documentSnapshot.getString("adSoyad") ?: "Ad Soyad Bulunamadı"
+                        _adSoyad.value = fullName
                         Log.d("Firestore", "Ad soyad: $fullName")
                     } else {
-                        adSoyad.value = "Ad Soyad Bulunamadı"
+                        _adSoyad.value = "Ad Soyad Bulunamadı"
                         Log.d("Firestore", "Belge bulunamadı.")
                     }
                 } catch (e: Exception) {
                     Log.e("Firestore", "Veri okuma hatası: ${e.message}")
-                    adSoyad.value = "Ad Soyad Bulunamadı"
+                    _adSoyad.value = "Ad Soyad Bulunamadı"
                 }
             }
-        } else {
-            adSoyad.value = "Ad Soyad Bulunamadı"
         }
     }
-    fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
+
+        fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
+            val user = auth.currentUser
+            val uid = user?.uid
+
+            if (user != null && uid != null) {
+                viewModelScope.launch {
+                    try {
+                        // Firestore'dan "users" koleksiyonundaki kullanıcı belgesini sil
+                        firestore.collection("users").document(uid).delete().await()
+
+                        // Firestore'dan "uniqueQr" koleksiyonundaki kullanıcıya ait belgeyi sil
+                        firestore.collection("uniqueQr").document(uid).delete().await()
+
+                        // Ardından Firebase Authentication'dan kullanıcıyı sil
+                        user.delete().addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                onResult(true, null) // Başarılı silme
+                            } else {
+                                onResult(false, task.exception?.message ?: "Kullanıcı silinemedi.")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        onResult(false, "Silme hatası: ${e.message}")
+                    }
+                }
+            } else {
+                onResult(false, "Kullanıcı oturumu açık değil.")
+            }
+        }
+
+    fun updateName(adSoyad: String) {
         val user = auth.currentUser
         val uid = user?.uid
 
-        if (user != null && uid != null) {
+        if (uid != null) {
+            val userRef = firestore.collection("users").document(uid)
+
             viewModelScope.launch {
                 try {
-                    // Firestore'dan "users" koleksiyonundaki kullanıcı belgesini sil
-                    firestore.collection("users").document(uid).delete().await()
-
-                    // Firestore'dan "uniqueQr" koleksiyonundaki kullanıcıya ait belgeyi sil
-                    firestore.collection("uniqueQr").document(uid).delete().await()
-
-                    // Ardından Firebase Authentication'dan kullanıcıyı sil
-                    user.delete().addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            onResult(true, null) // Başarılı silme
-                        } else {
-                            onResult(false, task.exception?.message ?: "Kullanıcı silinemedi.")
-                        }
-                    }
+                    userRef.update("adSoyad", adSoyad).await()
+                    _adSoyad.value = adSoyad
+                    Log.d("Firestore", "Ad soyad güncellendi: $adSoyad")
                 } catch (e: Exception) {
-                    onResult(false, "Silme hatası: ${e.message}")
+                    Log.e("Firestore", "Ad soyad güncelleme hatası: ${e.message}")
                 }
             }
-        } else {
-            onResult(false, "Kullanıcı oturumu açık değil.")
         }
     }
 }

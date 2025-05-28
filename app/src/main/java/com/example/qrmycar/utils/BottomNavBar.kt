@@ -2,6 +2,7 @@ package com.example.qrmycar.utils
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -24,8 +25,11 @@ fun BottomNavBar(
             label = { Text("QR") },
             selected = baseRoute == "qrScreen",
             onClick = {
-                navController.navigate("qrScreen?email=${userEmail}&plateNumber=${plateNumber}") {
-                    popUpTo("qrScreen") { inclusive = true }
+                if (baseRoute != "qrScreen") {
+                    navController.navigate("qrScreen?email=${userEmail}&plateNumber=${plateNumber}") {
+                        popUpTo("qrScreen") { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             }
         )
@@ -34,8 +38,11 @@ fun BottomNavBar(
             label = { Text("Profil") },
             selected = baseRoute == "profile",
             onClick = {
-                navController.navigate("profile") {
-                    popUpTo("profile") { inclusive = true }
+                if (baseRoute != "profile") {
+                    navController.navigate("profile") {
+                        popUpTo("profile") { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             }
         )
@@ -44,11 +51,28 @@ fun BottomNavBar(
             label = { Text("Ayarlar") },
             selected = baseRoute == "settings",
             onClick = {
-                navController.navigate("settings") {
-                    popUpTo("settings") { inclusive = true }
+                if (baseRoute != "settings") {
+                    navController.navigate("settings") {
+                        popUpTo("settings") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Notifications, contentDescription = "Bildirimler") },
+            label = { Text("Bildirimler") },
+            selected = baseRoute == "notification",
+            onClick = {
+                if (baseRoute != "notification") {
+                    navController.navigate("notification") {
+                        popUpTo("notification") { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             }
         )
     }
 }
+
 

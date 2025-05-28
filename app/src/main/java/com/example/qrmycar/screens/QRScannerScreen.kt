@@ -111,7 +111,7 @@ fun QRScannerScreen(navController: NavController) {
             } else if (hasCameraPermission) {
                 QRScannerBox(
                     modifier = Modifier
-                        .size(330.dp) // Daha küçük kutu
+                        .size(300.dp) // Daha küçük kutu
                         .clip(RoundedCornerShape(16.dp))
                         .border(2.dp, Color.Gray, RoundedCornerShape(16.dp)),
                     onQrScanned = {

@@ -125,31 +125,4 @@ class UserViewModel @Inject constructor() : ViewModel() {
                 _isLoading.value = false
             }
     }
-
-    /* fun saveFcmTokenToFirestore(token: String) {
-        val user = firebaseAuth.currentUser
-        if (user != null) {
-            val docRef = firestore.collection("uniqueQr").document(user.uid)
-
-            docRef.get()
-                .addOnSuccessListener { document ->
-                    val existingToken = document.getString("fcmToken")
-                    if (existingToken == null || existingToken != token) {
-                        val data = hashMapOf("fcmToken" to token)
-                        docRef.set(data)
-                            .addOnSuccessListener {
-                                Log.d("UserViewModel", "Token kaydedildi.")
-                            }
-                            .addOnFailureListener { e ->
-                                Log.e("UserViewModel", "Token kaydedilemedi: ${e.message}")
-                            }
-                    }
-                }
-                .addOnFailureListener { e ->
-                    Log.e("UserViewModel", "Token kontrol hatası: ${e.message}")
-                }
-        }
-    }
-
-     */
 }
