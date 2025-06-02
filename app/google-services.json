@@ -7,9 +7,28 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:516878710486:android:54258822cf48af385bbb77",
+        "android_client_info": {
+          "package_name": "com.example.EasyQar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQBeZd7qme-DAyLvNVJDJEacB8XbS7NGE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:516878710486:android:ebb9dc77329fdc915bbb77",
         "android_client_info": {
-          "package_name": "com.example.qrmycar"
+          "package_name": "com.example.easyqar"
         }
       },
       "oauth_client": [],

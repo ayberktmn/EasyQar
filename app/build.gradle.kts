@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -6,18 +8,33 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// local.properties dosyasını yükle
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use {
+        localProperties.load(it)
+    }
+}
+
+val fcmCredentialsFile: String = localProperties.getProperty("fcm_credentials_file") ?: ""
+
+
 android {
-    namespace = "com.example.qrmycar"
+    namespace = "com.example.EasyQar"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.qrmycar"
+        applicationId = "com.example.easyqar"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "FCM_CREDENTIALS_FILE", "\"$fcmCredentialsFile\"")
+
     }
 
     buildTypes {
@@ -52,6 +69,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 
@@ -72,6 +90,7 @@ android {
 }
 
 dependencies {
+
     // Core
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -167,6 +186,8 @@ dependencies {
     //Coil
     implementation("io.coil-kt:coil-compose:2.5.0")
 
+}
 
-
+kapt {
+    correctErrorTypes = true
 }
