@@ -1,6 +1,7 @@
 package com.example.EasyQar.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -12,17 +13,21 @@ import androidx.navigation.NavController
 import com.example.EasyQar.utils.CustomSmallTopAppBar
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+import com.google.accompanist.pager.*
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalPagerApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun QRScreen(
     navController: NavController,
-    email: String = "", // Varsayılan boş değer
-    plateNumber: String = "" // Varsayılan boş değer
+    email: String = "",
+    plateNumber: String = ""
 ) {
     val tabs = listOf("QR Tara", "QR Göster")
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    val pagerState = rememberPagerState(initialPage = 1)
+    val coroutineScope = rememberCoroutineScope()
     val primaryBlue = Color(0xFF1591EA)
-    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -32,24 +37,27 @@ fun QRScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // topBar yüksekliğine göre içerik aşağıda başlasın
+                .padding(innerPadding)
         ) {
-            // TabRow direkt TopBar'ın altına gelsin
             TabRow(
-                selectedTabIndex = selectedTabIndex,
+                selectedTabIndex = pagerState.currentPage,
                 containerColor = Color.White,
                 contentColor = Color.Black,
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
                         color = primaryBlue
                     )
                 }
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
+                        selected = pagerState.currentPage == index,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
                         text = { Text(title) }
                     )
                 }
@@ -57,15 +65,14 @@ fun QRScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                when (selectedTabIndex) {
-                    0 -> {
-                        QRScannerScreen(navController = navController) // NavController'ı doğru şekilde kullan
-                    }
-
-                    1 -> {
-                        QRCodeScreen(userEmail = email) // QRCodeScreen'yi doğru şekilde çağır
-                    }
+            HorizontalPager(
+                count = tabs.size,
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> QRScannerScreen(navController = navController)
+                    1 -> QRCodeScreen(userEmail = email)
                 }
             }
         }

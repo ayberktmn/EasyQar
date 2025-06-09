@@ -1,8 +1,10 @@
 package com.example.EasyQar.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -73,11 +75,22 @@ fun QRCodeScreen(userEmail: String) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 qrBitmap?.let {
-                    Image(
-                        bitmap = it.asImageBitmap(),
-                        contentDescription = "QR Kod",
-                        modifier = Modifier.size(280.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(280.dp)
+                            .background(
+                                color = Color.White,
+                                shape = RoundedCornerShape(16.dp) // Radius burada veriliyor
+                            )
+                            .padding(8.dp), // QR kodu kutuya ortalamak için iç boşluk
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = "QR Kod",
+                            modifier = Modifier.size(280.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -120,7 +133,7 @@ fun QRCodeScreen(userEmail: String) {
                         contentDescription = "Boş plaka",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(3f),
+                            .aspectRatio(3.5f),
                         contentScale = ContentScale.Fit
                     )
 

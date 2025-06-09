@@ -16,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -35,10 +34,13 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.EasyQar.R
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.firestore.FirebaseFirestore
@@ -53,9 +55,11 @@ import okhttp3.Request
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import com.example.EasyQar.BuildConfig
+import com.example.EasyQar.datastore.NotificationType
+import com.example.EasyQar.viewmodel.NotificationViewModel
 
 @Composable
-fun QRScannerScreen(navController: NavController) {
+fun QRScannerScreen(navController: NavController,NotificationviewModel: NotificationViewModel = viewModel()) {
     var qrResult by remember { mutableStateOf<String?>(null) }
     var hasCameraPermission by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }  // Loading durumu
@@ -245,7 +249,8 @@ fun QRScannerBox(
             onScanAgain = {
                 // QR taramayı tekrar başlat
                 isScanningActive = true  // Burada `isScanningActive`'i tekrar `true` yaparak QR taramayı başlatabilirsiniz
-            }
+            },
+            notificationViewModel = NotificationViewModel()
         )
     }
 
@@ -256,9 +261,12 @@ fun ShowOptionsDialog(
     context: Context,
     uid: String,
     onDismiss: () -> Unit,
-    onOptionSelected: (String, String, Context) -> Unit,  // Bu callback'i diyalogda kullanabilirsin
-    onScanAgain: () -> Unit  // QR taramayı tekrar başlatmak için callback
+    onOptionSelected: (String, String, Context) -> Unit,
+    onScanAgain: () -> Unit,
+    notificationViewModel: NotificationViewModel
 ) {
+    val currentUserId by notificationViewModel.currentUserId.collectAsState(initial = null)
+
     var selectedOption by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -277,39 +285,47 @@ fun ShowOptionsDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (selectedOption != null) {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            // Seçilen seçenekle ilgili FCM tokeni alıyoruz ve mesaj gönderiyoruz
+                    if (selectedOption != null && currentUserId != null) {
+                        notificationViewModel.viewModelScope.launch {
                             val token = getFcmTokenByUid(uid)
-                            token?.let {
-                                // FCM bildirimini gönder
-                                sendPushNotificationToUser(it, "QR Kod Durumu", "Seçilen durum: $selectedOption", context)
-                                // Seçenek gönderildikten sonra callback çağrılabilir
-                                onOptionSelected(it, selectedOption!!, context)
+                            if (token != null) {
+                                val title = "EasyQar"
+                                val message = "Aracınızın durumu: $selectedOption"
+
+                                // Bildirim gönder
+                                sendPushNotificationToUser(token, title, message, context)
+
+                                notificationViewModel.sendNotificationToTwoUsers(
+                                    senderUserId = currentUserId!!,  // ViewModel'den alıyoruz
+                                    receiverUserId = uid,
+                                    title = title,
+                                    message = message,
+                                    type = NotificationType.WARNING
+                                )
+
+                                onOptionSelected(token, selectedOption!!, context)
                                 onDismiss()
+                                onScanAgain()
+                            } else {
+                                Toast.makeText(context, "Kullanıcının tokeni alınamadı", Toast.LENGTH_SHORT).show()
                             }
                         }
-                        // Gönderme işlemi başarılı, QR taramayı tekrar aktif et
-                        onScanAgain()
                     } else {
                         Toast.makeText(context, "Lütfen bir seçenek seçin", Toast.LENGTH_SHORT).show()
                     }
-                    onDismiss() // Gönder butonuna tıklandığında diyalog kapanır
                 }
             ) {
-                Text("Gönder", fontSize = 16.sp, color = Color.Blue)
+                Text(text = "Gönder", fontSize = 16.sp, color = colorResource(id = R.color.primaryBlue))
             }
         },
         dismissButton = {
-            TextButton(onClick = {
-                onDismiss()  // İptal butonuna tıklandığında diyalog kapanır
-            }) {
+            TextButton(onClick = onDismiss) {
                 Text("İptal", fontSize = 16.sp, color = Color.Red)
-              //  onScanAgain()
             }
         }
     )
 }
+
 
 fun getUserInfoFromUid(context: Context, uid: String) {
     val db = FirebaseFirestore.getInstance()
@@ -407,17 +423,22 @@ fun OptionItem(
                 tint = Color.Unspecified
             )
             Spacer(modifier = Modifier.width(16.dp))
+
+            val textColor = if (isSelected && label == "Kullanıcıyı Şikayet Et") {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant // veya onBackground
+            }
+
             Text(
                 text = label,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isSelected && label == "Kullanıcıyı Şikayet Et") Color.White else Color.Black
+                color = textColor
             )
         }
     }
 }
-
-
 
 
 // FCM bildirimini göndermek için asenkron işlem

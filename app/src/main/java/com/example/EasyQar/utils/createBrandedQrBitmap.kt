@@ -52,8 +52,6 @@ fun createBrandedQrBitmap(
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
 
-
-
     val textWidth = paint.measureText(appName)
     val totalContentWidth = logoSize + spacing + textWidth
     val startX = (qrWidth - totalContentWidth) / 2f
