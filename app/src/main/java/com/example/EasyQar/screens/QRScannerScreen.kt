@@ -32,8 +32,10 @@ import android.Manifest.permission.CAMERA
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.camera.core.CameraControl
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
@@ -64,6 +66,7 @@ fun QRScannerScreen(navController: NavController,NotificationviewModel: Notifica
     var hasCameraPermission by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }  // Loading durumu
     val context = LocalContext.current
+    var isFlashOn by remember { mutableStateOf(false) }
 
     // QR kodu okunduğunda gösterilecek dialog durumu
     var isDialogVisible by remember { mutableStateOf(false) }
@@ -110,13 +113,35 @@ fun QRScannerScreen(navController: NavController,NotificationviewModel: Notifica
             } else if (hasCameraPermission) {
                 QRScannerBox(
                     modifier = Modifier
-                        .size(300.dp) // Daha küçük kutu
+                        .size(300.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .border(2.dp, Color.Gray, RoundedCornerShape(16.dp)),
+                    navController = navController,
                     onQrScanned = {
                         qrResult = it
-                    }
+                    },
+                    isFlashOn = isFlashOn // yeni parametre
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                IconButton(
+                    onClick = { isFlashOn = !isFlashOn },
+                    modifier = Modifier
+                        .size(60.dp)
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    val iconPainter = painterResource(
+                        id = if (isFlashOn) R.drawable.yellowtorch else R.drawable.bluetorch
+                    )
+                    Icon(
+                        painter = iconPainter,
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
             } else {
                 Text("Kamera izni verilmedi. Lütfen izin verin.", color = Color.Red)
             }
@@ -124,9 +149,11 @@ fun QRScannerScreen(navController: NavController,NotificationviewModel: Notifica
             Spacer(modifier = Modifier.height(16.dp))
 
             qrResult?.let {
-                Text("Sonuç: $it")  // okunan qr a ait araba plakası çıksın yapılacak
+
+               // Text("Sonuç: $it")
             }
         }
+
     }
 }
 
@@ -134,20 +161,19 @@ fun QRScannerScreen(navController: NavController,NotificationviewModel: Notifica
 @Composable
 fun QRScannerBox(
     modifier: Modifier = Modifier,
+    navController: NavController,
     onQrScanned: (String) -> Unit,
+    isFlashOn: Boolean
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
 
     var isScanningActive by remember { mutableStateOf(true) }
-    // QR kodu okunduktan sonra diyalog göstermek için durum
     var isDialogVisible by remember { mutableStateOf(false) }
-
     var scannedUid by remember { mutableStateOf<String?>(null) }
+    var cameraControl by remember { mutableStateOf<CameraControl?>(null) }
 
-
-    // AndroidView ile PreviewView'i bağlama
     AndroidView(
         factory = { previewView },
         modifier = modifier
@@ -156,27 +182,22 @@ fun QRScannerBox(
     )
 
     LaunchedEffect(Unit) {
-        // Kamera sağlayıcısını alıyoruz
         val cameraProvider = ProcessCameraProvider.getInstance(context).get()
 
-        // Preview nesnesi
         val preview = Preview.Builder().build().apply {
             setSurfaceProvider(previewView.surfaceProvider)
         }
 
-        // Barcode scanner oluşturuluyor
         val barcodeScanner = BarcodeScanning.getClient(
             BarcodeScannerOptions.Builder()
                 .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
                 .build()
         )
 
-        // Image analysis (görüntü analizi) yapacak olan nesne
         val imageAnalyzer = ImageAnalysis.Builder()
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // Sadece en son görüntü üzerinde işlem yap
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
 
-        // Görüntü analizini başlatıyoruz
         imageAnalyzer.setAnalyzer(ContextCompat.getMainExecutor(context)) { imageProxy ->
             if (!isScanningActive) {
                 imageProxy.close()
@@ -200,7 +221,6 @@ fun QRScannerBox(
 
                                     CoroutineScope(Dispatchers.Main).launch {
                                         try {
-                                            // UID'den kullanıcı bilgilerini çek
                                             getUserInfoFromUid(context, decodedString)
                                             isDialogVisible = true
                                         } catch (e: Exception) {
@@ -225,36 +245,34 @@ fun QRScannerBox(
             }
         }
 
-        // Kamera seçimi
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-        cameraProvider.unbindAll() // Önceki bağlanmış tüm kameraları temizle
-        cameraProvider.bindToLifecycle(
+        cameraProvider.unbindAll()
+        val camera = cameraProvider.bindToLifecycle(
             lifecycleOwner,
             cameraSelector,
             preview,
-            imageAnalyzer // Görüntü analizi kamera ile bağlanacak
+            imageAnalyzer
         )
+        cameraControl = camera.cameraControl
     }
 
-    // QR kodu okunduktan sonra diyalog gösterme
+    LaunchedEffect(isFlashOn) {
+        cameraControl?.enableTorch(isFlashOn)
+    }
+
     if (isDialogVisible && scannedUid != null) {
         ShowOptionsDialog(
             context = context,
             uid = scannedUid!!,
-            onDismiss = {  isDialogVisible = false
-                           isScanningActive = true  },
-            onOptionSelected = { token, option, context ->
-                // Seçenek seçildikten sonra yapılacak işlemler
-            },
-            onScanAgain = {
-                // QR taramayı tekrar başlat
-                isScanningActive = true  // Burada `isScanningActive`'i tekrar `true` yaparak QR taramayı başlatabilirsiniz
-            },
+            onDismiss = { isDialogVisible = false; isScanningActive = true },
+            onOptionSelected = { token, option, context -> },
+            onScanAgain = { isScanningActive = true },
+            navController,
             notificationViewModel = NotificationViewModel()
         )
     }
-
 }
+
 
 @Composable
 fun ShowOptionsDialog(
@@ -263,6 +281,7 @@ fun ShowOptionsDialog(
     onDismiss: () -> Unit,
     onOptionSelected: (String, String, Context) -> Unit,
     onScanAgain: () -> Unit,
+    navController: NavController,
     notificationViewModel: NotificationViewModel
 ) {
     val currentUserId by notificationViewModel.currentUserId.collectAsState(initial = null)
@@ -280,6 +299,17 @@ fun ShowOptionsDialog(
                 OptionItem("Kapılar Açık", R.drawable.kapiacik, selectedOption) { selectedOption = it }
                 OptionItem("Kaza", R.drawable.kaza, selectedOption) { selectedOption = it }
                 OptionItem("Kullanıcıyı Şikayet Et", R.drawable.megaphone, selectedOption) { selectedOption = it }
+                OptionItem("Tıbbi Bilgiler", R.drawable.healthinsurance, selectedOption) {
+                    selectedOption = it
+                    if (it == "Tıbbi Bilgiler") {
+                        // Önce uid'yi burada kullan (örneğin logla veya toast göster)
+                        getUserInfoFromUid(context, uid)
+
+                        // Sonra scannedUid olarak uid'yi kullanarak navigate et
+                        val scannedUid = uid
+                        navController.navigate("medicalInfo/$scannedUid")
+                    }
+                }
             }
         },
         confirmButton = {
@@ -326,7 +356,6 @@ fun ShowOptionsDialog(
     )
 }
 
-
 fun getUserInfoFromUid(context: Context, uid: String) {
     val db = FirebaseFirestore.getInstance()
 
@@ -340,12 +369,6 @@ fun getUserInfoFromUid(context: Context, uid: String) {
 
                 // Veriyi logla
                 Log.d("UserInfo", "adSoyad: $userName, plateNumber: $plate")
-
-                if (userName != null && plate != null) {
-                    Toast.makeText(context, "Ad: $userName - Plaka: $plate", Toast.LENGTH_LONG).show()
-                } else {
-                    Toast.makeText(context, "Ad veya Plaka bilgisi eksik.", Toast.LENGTH_SHORT).show()
-                }
             } else {
                 Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
             }

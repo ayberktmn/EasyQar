@@ -7,6 +7,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,13 +32,34 @@ import com.google.firebase.firestore.FirebaseFirestore
 fun NotificationScreen(navController: NavController, viewModel: NotificationViewModel = viewModel()) {
     val notifications = viewModel.notifications
 
-    val currentUser = FirebaseAuth.getInstance().currentUser
-    val userId = currentUser?.uid ?: ""
-    val userEmail = currentUser?.email ?: "Bilinmeyen Email"
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
+    // Sayfa açıldığında bildirimleri okundu olarak işaretle
+    LaunchedEffect(Unit) {
+        viewModel.markAllAsRead()
+    }
 
     Scaffold(
         topBar = {
-            CustomSmallTopAppBar(title = "Bildirimler")
+            CustomSmallTopAppBar(
+                title = "Bildirimler",
+                action = {
+                    IconButton(
+                        onClick = {
+                            if (notifications.isNotEmpty()) {
+                                showConfirmDialog = true
+                            }
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.delete),
+                            contentDescription = "Tüm Bildirimleri Sil",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            )
         }
     ) { paddingValues ->
         LazyColumn(
@@ -50,6 +75,33 @@ fun NotificationScreen(navController: NavController, viewModel: NotificationView
             items(notifications) { notification ->
                 NotificationCard(notification = notification)
             }
+        }
+
+        if (showConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmDialog = false },
+                title = { Text(text = "Bildirimleri Sil") },
+                text = { Text(text = "Tüm bildirimleri silmek istediğinize emin misiniz?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.clearAllNotifications()
+                        showConfirmDialog = false
+                    }) {
+                        Text(
+                            "Evet",
+                            color = Color.Red
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirmDialog = false }) {
+                        Text(
+                            "İptal",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            )
         }
     }
 }

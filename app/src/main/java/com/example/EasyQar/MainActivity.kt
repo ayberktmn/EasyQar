@@ -1,6 +1,9 @@
 package com.example.EasyQar
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -18,6 +21,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.EasyQar.utils.ConnectivityObserver
 import com.example.EasyQar.utils.NoInternetDialog
@@ -30,9 +35,20 @@ class MainActivity : ComponentActivity() {
 
     private val themeViewModel: ThemeViewModel by viewModels()
     private lateinit var connectivityObserver: ConnectivityObserver
+    private val REQUEST_CODE_NOTIFICATION = 1001
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    REQUEST_CODE_NOTIFICATION
+                )
+            }
+        }
 
         connectivityObserver = ConnectivityObserver(this)
         connectivityObserver.register()
@@ -76,14 +92,11 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
-
                     Navigation()
                 }
             }
         }
     }
-
-
     override fun onDestroy() {
         super.onDestroy()
         connectivityObserver.unregister()

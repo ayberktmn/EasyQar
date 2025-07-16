@@ -5,6 +5,8 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.R.attr.onClick
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,6 +38,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.EasyQar.AppTheme
@@ -43,6 +46,8 @@ import com.example.EasyQar.utils.CustomSmallTopAppBar
 import com.example.EasyQar.viewmodel.LoginViewModel
 import com.example.EasyQar.R
 import com.example.EasyQar.viewmodel.LocalThemeViewModel
+import java.io.File
+import java.io.FileOutputStream
 
 @Composable
 fun SettingsScreen(navController: NavController, loginViewModel: LoginViewModel = hiltViewModel()) {
@@ -142,14 +147,18 @@ fun SettingsScreen(navController: NavController, loginViewModel: LoginViewModel 
             }
 
             // Gizlilik
+
             item {
                 SettingsItemWithArrow(
                     icon = painterResource(id = R.drawable.shield),
                     title = "Gizlilik",
-                    onClick = { /* Navigate to privacy */ },
+                    onClick = {
+                        openPdfFromAssets(context, "kvkk.pdf")
+                    },
                     iconColor = primaryBlue
                 )
             }
+
 
             // Dil
             item {
@@ -195,9 +204,6 @@ fun SettingsScreen(navController: NavController, loginViewModel: LoginViewModel 
                     onClick = onLogoutClick
                )
             }
-
-
-
         }
     }
 }
@@ -455,4 +461,34 @@ fun DeleteAccountDialog(
         )
     }
 }
+
+fun openPdfFromAssets(context: Context, fileName: String) {
+    try {
+        val inputStream = context.assets.open(fileName)
+        val outFile = File(context.filesDir, fileName)
+
+        if (!outFile.exists()) {
+            val outputStream = FileOutputStream(outFile)
+            inputStream.copyTo(outputStream)
+            outputStream.close()
+            inputStream.close()
+        }
+
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            outFile
+        )
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/pdf")
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NO_HISTORY
+        }
+
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "PDF açılırken hata oluştu", Toast.LENGTH_SHORT).show()
+    }
+}
+
 

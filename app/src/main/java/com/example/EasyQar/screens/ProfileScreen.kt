@@ -104,8 +104,11 @@ fun ProfileScreen(
                 val savedUri = Uri.fromFile(file)
                 profilResmi = savedUri
 
-                // updateImage fonksiyonunu ViewModel'den çağır
+                // ViewModel'den güncelle
                 loginViewModel.updateImage()
+
+                // Sayfayı yenile
+                refreshKey++
             }
         }
     }

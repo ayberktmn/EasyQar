@@ -119,27 +119,7 @@ class LoginViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    fun updateName(newName: String) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val firestore = FirebaseFirestore.getInstance()
 
-        // Kullanıcı adı güncelleme
-        firestore.collection("users").document(userId)
-            .update("adSoyad", newName)
-            .addOnSuccessListener {
-                // Güncelleme başarılıysa bildirim ekle
-                val notification = mapOf(
-                    "title" to "Profil Güncellemesi",
-                    "description" to "Ad Soyadınız $newName olarak güncellendi.",
-                    "timestamp" to FieldValue.serverTimestamp(), // ← Doğru alan
-                    "type" to "SUCCESS"
-                )
-                firestore.collection("users")
-                    .document(userId)
-                    .collection("notifications")
-                    .add(notification)
-            }
-    }
 
     fun updateImage() {
         val firestore = FirebaseFirestore.getInstance()

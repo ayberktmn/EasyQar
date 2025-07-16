@@ -10,7 +10,8 @@ data class FirebaseNotificationDTO(
     val title: String = "",
     val description: String = "",
     val timestamp: Date? = null,  // ← Buraya dikkat
-    val type: String = ""
+    val type: String = "",
+    val read: Boolean = false
 ) {
     fun toDomain(): NotificationItem {
         val timeAgo = timestamp?.let { getTimeAgo(it) } ?: "Bilinmiyor"
@@ -22,7 +23,8 @@ data class FirebaseNotificationDTO(
                 "SUCCESS" -> NotificationType.SUCCESS
                 "WARNING" -> NotificationType.WARNING
                 else -> NotificationType.INFO
-            }
+            },
+            read = this.read ?: false, // 👈 Varsayılan false
         )
     }
 }

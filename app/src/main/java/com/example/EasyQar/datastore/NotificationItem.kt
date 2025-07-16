@@ -5,5 +5,6 @@ data class NotificationItem(
     val description: String,
     val timeAgo: String,
     val type: NotificationType,
-    val read: Boolean = false
+    val read: Boolean = false,
+    val id: String = ""
 )

@@ -10,6 +10,7 @@ import com.example.EasyQar.util.SharedPreferencesHelper
 import dagger.Module
 import dagger.Provides
 import androidx.datastore.preferences.core.Preferences
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
@@ -50,5 +51,11 @@ object AppModule {
     @Singleton
     fun provideThemeDataStore(dataStore: DataStore<Preferences>): ThemeDataStore {
         return ThemeDataStore(dataStore)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseFirestore(): FirebaseFirestore {
+        return FirebaseFirestore.getInstance()
     }
 }

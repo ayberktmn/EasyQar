@@ -13,8 +13,10 @@ import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomSmallTopAppBar(title: String) {
-
+fun CustomSmallTopAppBar(
+    title: String,
+    action: (@Composable () -> Unit)? = null
+) {
     Column(
         modifier = Modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -28,10 +30,14 @@ fun CustomSmallTopAppBar(title: String) {
                     fontSize = 22.sp
                 )
             },
-            backgroundColor = Color(0xFF1591EA), // Adjust your preferred color
+            backgroundColor = Color(0xFF1591EA),
             modifier = Modifier.fillMaxWidth(),
-            contentColor = Color.White
+            contentColor = Color.White,
+            actions = {
+                if (action != null) {
+                    action()
+                }
+            }
         )
     }
 }
-

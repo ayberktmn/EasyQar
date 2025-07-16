@@ -1,23 +1,30 @@
 package com.example.EasyQar
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.EasyQar.screens.*
 import com.example.EasyQar.utils.BottomNavBar
 import com.example.EasyQar.utils.RequestNotificationPermission
+import com.example.EasyQar.viewmodel.NotificationViewModel
 import com.example.EasyQar.viewmodel.UserViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun Navigation() {
         val userViewModel: UserViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
         val navController = rememberNavController()
-
+        val notiViewModel: NotificationViewModel = viewModel()
         val isLoading by userViewModel.isLoading
         val userEmail by userViewModel.userEmail
         val plateNumber by userViewModel.plateNumber
@@ -51,7 +58,8 @@ fun Navigation() {
                         BottomNavBar(
                             navController = navController,
                             userEmail = userEmail,
-                            plateNumber = plateNumber ?: ""
+                            plateNumber = plateNumber ?: "",
+                            viewModel = notiViewModel
                         )
                     }
                 }
@@ -84,6 +92,14 @@ fun Navigation() {
                     composable("theme") { ThemeChangeScreen(navController) }
                     composable("notification") { NotificationScreen(navController) }
                     composable("profileEdit") { ProfileEditScreen(navController) }
+                    composable(
+                        "medicalInfo/{uid}",
+                        arguments = listOf(navArgument("uid") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val uid = backStackEntry.arguments?.getString("uid") ?: ""
+                        MedicalInfoScreen(navController = navController, uid = uid)
+                    }
+
                 }
             }
         }
