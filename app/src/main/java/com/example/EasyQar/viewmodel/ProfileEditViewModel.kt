@@ -109,16 +109,36 @@ class ProfileEditViewModel @Inject constructor() : ViewModel() {
         val userId = auth.currentUser?.uid ?: return
         val userRef = firestore.collection("users").document(userId)
 
-        val updateMap = mapOf(
-            "bloodType" to bloodType,
-            "diseases" to diseases,
-            "medications" to medications,
-            "allergies" to allergies
-        )
+        viewModelScope.launch {
+            try {
+                val snapshot = userRef.get().await()
 
-        userRef.update(updateMap)
-            .addOnSuccessListener {
-                // Başarı durumunda bildirim ekleyebilirsin
+                val bloodTypeVal = snapshot.getString("bloodType") ?: ""
+                val diseasesVal = snapshot.getString("diseases") ?: ""
+                val medicationsVal = snapshot.getString("medications") ?: ""
+                val allergiesVal = snapshot.getString("allergies") ?: ""
+
+                if (
+                    bloodTypeVal == bloodType &&
+                    diseasesVal == diseases &&
+                    medicationsVal == medications &&
+                    allergiesVal == allergies
+                ) {
+                    // Değişiklik yok
+                    return@launch
+                }
+
+// Firestore'u güncelle
+                val updateMap = mapOf(
+                    "bloodType" to bloodType,
+                    "diseases" to diseases,
+                    "medications" to medications,
+                    "allergies" to allergies
+                )
+
+                userRef.update(updateMap).await()
+
+// Bildirim ekle
                 val notification = mapOf(
                     "title" to "Profil Güncellemesi",
                     "description" to "Tıbbi bilgileriniz güncellendi.",
@@ -126,32 +146,44 @@ class ProfileEditViewModel @Inject constructor() : ViewModel() {
                     "type" to "SUCCESS"
                 )
                 userRef.collection("notifications").add(notification)
-            }
-            .addOnFailureListener { e ->
-                // Hata durumunda log veya hata işlemi yapılabilir
+
+            } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
     }
 
-    fun updateName(newName: String) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val firestore = FirebaseFirestore.getInstance()
 
-        // Kullanıcı adı güncelleme
-        firestore.collection("users").document(userId)
-            .update("adSoyad", newName)
-            .addOnSuccessListener {
-                // Güncelleme başarılıysa bildirim ekle
+    fun updateName(newName: String) {
+        val userId = auth.currentUser?.uid ?: return
+        val userRef = firestore.collection("users").document(userId)
+
+        viewModelScope.launch {
+            try {
+                // Önce mevcut adı al
+                val snapshot = userRef.get().await()
+                val currentName = snapshot.getString("adSoyad") ?: ""
+
+                // Eğer değişmemişse çık
+                if (currentName == newName) {
+                    return@launch
+                }
+
+                // Değişmişse Firestore'u güncelle
+                userRef.update("adSoyad", newName).await()
+
+                // Başarıyla güncellendiyse bildirim ekle
                 val notification = mapOf(
                     "title" to "Profil Güncellemesi",
                     "description" to "Ad Soyadınız $newName olarak güncellendi.",
-                    "timestamp" to FieldValue.serverTimestamp(), // ← Doğru alan
+                    "timestamp" to FieldValue.serverTimestamp(),
                     "type" to "SUCCESS"
                 )
-                firestore.collection("users")
-                    .document(userId)
-                    .collection("notifications")
-                    .add(notification)
+                userRef.collection("notifications").add(notification)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+        }
     }
+
 }

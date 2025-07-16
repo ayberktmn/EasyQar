@@ -1,0 +1,18 @@
+# ----------------------
+# 1. Android SDK + Java 17
+FROM ghcr.io/cirruslabs/flutter:latest-android
+
+# 2. Çalışma dizini
+WORKDIR /workspace
+
+# 3. Gereksiz dosyalar olmadan proje dosyalarını kopyala
+COPY . .
+
+# 4. Gradle cache için volume (cache hız kazandırır)
+VOLUME ["/root/.gradle"]
+
+# 5. Gradle ile assembleDebug çalıştır
+RUN ./gradlew assembleDebug
+
+# 6. Build edilen APK'yi göstermek için
+CMD ["ls", "-R", "app/build/outputs/apk/"]
